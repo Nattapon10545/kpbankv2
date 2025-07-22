@@ -2268,18 +2268,29 @@
                 // Create a temporary container with A4 width
                 const tempContainer = document.createElement('div');
                 tempContainer.style.width = a4WidthPx + 'px';
-                tempContainer.style.padding = '20px';
+                tempContainer.style.padding = '40px';
                 tempContainer.style.backgroundColor = '#ffffff';
                 tempContainer.style.fontFamily = 'Sarabun, sans-serif';
                 tempContainer.style.fontSize = '12px';
+                tempContainer.style.display = 'flex';
+                tempContainer.style.flexDirection = 'column';
+                tempContainer.style.alignItems = 'center';
                 tempContainer.innerHTML = preview.innerHTML;
+                
+                // Adjust header styling for centering
+                const header = tempContainer.querySelector('div[style*="text-align: center"]');
+                if (header) {
+                    header.style.width = '100%';
+                    header.style.marginBottom = '20px';
+                }
                 
                 // Adjust table styling for A4
                 const table = tempContainer.querySelector('table');
                 if (table) {
-                    table.style.width = '100%';
+                    table.style.width = '95%';
                     table.style.fontSize = '11px';
                     table.style.margin = '0 auto';
+                    table.style.borderCollapse = 'collapse';
                     
                     // Adjust cell padding
                     const cells = table.querySelectorAll('th, td');
@@ -2294,7 +2305,7 @@
                 document.body.appendChild(tempContainer);
                 
                 const canvas = await html2canvas(tempContainer, {
-                    width: a4WidthPx + 40, // Add padding
+                    width: a4WidthPx + 80, // Add padding for both sides
                     useCORS: true,
                     allowTaint: true,
                     backgroundColor: '#ffffff',
@@ -2440,5 +2451,5 @@
             }
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96347f7420841d2f',t:'MTc1MzIwMzY2NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9634888571d51d2f',t:'MTc1MzIwNDAzNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
