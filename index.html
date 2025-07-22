@@ -759,6 +759,17 @@
                     </div>
                     
                     <div class="row mb-3">
+                        <div class="col-md-12">
+                            <label class="form-label">ประเภทรายงาน</label>
+                            <select class="form-select" id="exportType">
+                                <option value="all">รายงานรายบุคคล</option>
+                                <option value="grade">รายงานรายชั้น (อนุบาล-ป.6)</option>
+                            </select>
+                            <small class="text-muted">รายงานรายชั้น: แสดงยอดรวมของแต่ละชั้นในแต่ละวัน</small>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
                         <div class="col-12">
                             <button class="btn btn-info me-2" onclick="generatePreview()">แสดงตัวอย่าง</button>
                             <button class="btn btn-success me-2" onclick="exportToImage()">Export รูปภาพ</button>
@@ -838,6 +849,11 @@
             // Set default dates
             const today = new Date().toISOString().split('T')[0];
             $('#migrateDate, #depositDate, #withdrawDate, #exportStartDate, #exportEndDate').val(today);
+            
+            // Export type change handler - no longer needed since we removed grade selection
+            $('#exportType').on('change', function() {
+                // Grade export now shows all grades automatically
+            });
         });
 
         function setupEventHandlers() {
@@ -2004,6 +2020,14 @@
         }
 
         function showExportModal() {
+            // Show/hide grade export option based on user role
+            if (currentUser && currentUser.grade === 'all') {
+                $('#exportType option[value="grade"]').show();
+            } else {
+                $('#exportType option[value="grade"]').hide();
+                $('#exportType').val('all');
+            }
+            
             $('#exportModal').modal('show');
         }
 
@@ -2025,7 +2049,8 @@
         }
 
         function generateExportData(startDate, endDate) {
-            let students = getUserStudents();
+            const exportType = $('#exportType').val();
+            const selectedGrade = $('#exportGrade').val();
             
             // Filter transactions by date range
             const filteredTransactions = transactionsData.filter(t => {
@@ -2043,56 +2068,120 @@
                 currentDate.setDate(currentDate.getDate() + 1);
             }
             
-            // Process data for each student
-            const exportData = students.map(student => {
-                const studentData = {
-                    name: student.name,
-                    grade: student.grade,
-                    dailyAmounts: {},
-                    dailyTotal: 0,
-                    monthlyTotal: 0,
-                    grandTotal: 0
-                };
+            if (exportType === 'grade') {
+                // Grade export: Show grades as rows with daily totals
+                const grades = ['อนุบาล', 'ป.1', 'ป.2', 'ป.3', 'ป.4', 'ป.5', 'ป.6'];
                 
-                // Initialize daily amounts
-                dates.forEach(date => {
-                    const dateStr = date.toISOString().split('T')[0];
-                    studentData.dailyAmounts[dateStr] = 0;
+                const exportData = grades.map(grade => {
+                    const gradeStudents = studentsData.filter(s => s.grade === grade);
+                    const gradeData = {
+                        name: grade,
+                        grade: grade,
+                        dailyAmounts: {},
+                        dailyTotal: 0,
+                        monthlyTotal: 0,
+                        grandTotal: 0
+                    };
+                    
+                    // Initialize daily amounts
+                    dates.forEach(date => {
+                        const dateStr = date.toISOString().split('T')[0];
+                        gradeData.dailyAmounts[dateStr] = 0;
+                    });
+                    
+                    // Calculate daily amounts for all students in this grade
+                    gradeStudents.forEach(student => {
+                        filteredTransactions
+                            .filter(t => t.studentId === student.id)
+                            .forEach(transaction => {
+                                const amount = parseFloat(transaction.amount) || 0;
+                                const multiplier = (transaction.type === 'deposit' || transaction.type === 'migrate') ? 1 : -1;
+                                gradeData.dailyAmounts[transaction.date] += (amount * multiplier);
+                            });
+                        
+                        // Add to grand total (current balance of all students in grade)
+                        gradeData.grandTotal += calculateStudentBalance(student.id);
+                    });
+                    
+                    // Calculate totals
+                    gradeData.dailyTotal = Object.values(gradeData.dailyAmounts).reduce((sum, amount) => sum + amount, 0);
+                    gradeData.monthlyTotal = gradeData.dailyTotal;
+                    
+                    return gradeData;
                 });
                 
-                // Calculate daily amounts
-                filteredTransactions
-                    .filter(t => t.studentId === student.id)
-                    .forEach(transaction => {
-                        const amount = parseFloat(transaction.amount) || 0;
-                        const multiplier = (transaction.type === 'deposit' || transaction.type === 'migrate') ? 1 : -1;
-                        studentData.dailyAmounts[transaction.date] += (amount * multiplier);
+                return { 
+                    students: exportData, 
+                    dates: dates, 
+                    exportType: exportType,
+                    selectedGrade: selectedGrade
+                };
+            } else {
+                // Regular export: Show individual students
+                let students = getUserStudents();
+                
+                const exportData = students.map(student => {
+                    const studentData = {
+                        name: student.name,
+                        grade: student.grade,
+                        dailyAmounts: {},
+                        dailyTotal: 0,
+                        monthlyTotal: 0,
+                        grandTotal: 0
+                    };
+                    
+                    // Initialize daily amounts
+                    dates.forEach(date => {
+                        const dateStr = date.toISOString().split('T')[0];
+                        studentData.dailyAmounts[dateStr] = 0;
                     });
+                    
+                    // Calculate daily amounts
+                    filteredTransactions
+                        .filter(t => t.studentId === student.id)
+                        .forEach(transaction => {
+                            const amount = parseFloat(transaction.amount) || 0;
+                            const multiplier = (transaction.type === 'deposit' || transaction.type === 'migrate') ? 1 : -1;
+                            studentData.dailyAmounts[transaction.date] += (amount * multiplier);
+                        });
+                    
+                    // Calculate totals
+                    studentData.dailyTotal = Object.values(studentData.dailyAmounts).reduce((sum, amount) => sum + amount, 0);
+                    studentData.monthlyTotal = studentData.dailyTotal;
+                    studentData.grandTotal = calculateStudentBalance(student.id);
+                    
+                    return studentData;
+                });
                 
-                // Calculate totals
-                studentData.dailyTotal = Object.values(studentData.dailyAmounts).reduce((sum, amount) => sum + amount, 0);
-                studentData.monthlyTotal = studentData.dailyTotal; // Same as daily total for the selected period
-                studentData.grandTotal = calculateStudentBalance(student.id);
-                
-                return studentData;
-            });
-            
-            return { students: exportData, dates: dates };
+                return { 
+                    students: exportData, 
+                    dates: dates, 
+                    exportType: exportType,
+                    selectedGrade: selectedGrade
+                };
+            }
         }
 
         function displayPreview(exportData, startDate, endDate) {
+            const reportTitle = exportData.exportType === 'grade' 
+                ? 'รายงานการออมทรัพย์รายชั้น' 
+                : 'รายงานการออมทรัพย์รายบุคคล';
+                
+            const columnHeader = exportData.exportType === 'grade' ? 'ชั้น' : 'ชื่อ-นามสกุล';
+                
             let html = `
                 <div style="text-align: center; margin-bottom: 20px; font-family: 'Sarabun', sans-serif;">
                     <img src="https://lh3.googleusercontent.com/d/1vQtWxoqhL4BWuOmDehWMGTqoRh63AThV" style="width: 60px; height: 60px; margin-bottom: 10px;">
                     <h4>โรงเรียนบ้านกิ่วพร้าว</h4>
-                    <p>รายงานการออมทรัพย์ ระหว่างวันที่ ${formatDate(startDate)} ถึง ${formatDate(endDate)}</p>
+                    <p>${reportTitle}</p>
+                    <p>ระหว่างวันที่ ${formatDate(startDate)} ถึง ${formatDate(endDate)}</p>
                 </div>
                 
                 <table class="table table-bordered" style="font-family: 'Sarabun', sans-serif; font-size: 14px;">
                     <thead class="table-primary">
                         <tr>
                             <th rowspan="2">ลำดับ</th>
-                            <th rowspan="2">ชื่อ-นามสกุล</th>
+                            <th rowspan="2">${columnHeader}</th>
             `;
             
             // Date headers
@@ -2109,24 +2198,24 @@
                     <tbody>
             `;
             
-            // Student rows
-            exportData.students.forEach((student, index) => {
+            // Data rows
+            exportData.students.forEach((item, index) => {
                 html += `
                     <tr>
                         <td>${index + 1}</td>
-                        <td>${student.name}</td>
+                        <td>${item.name}</td>
                 `;
                 
                 exportData.dates.forEach(date => {
                     const dateStr = date.toISOString().split('T')[0];
-                    const amount = student.dailyAmounts[dateStr] || 0;
+                    const amount = item.dailyAmounts[dateStr] || 0;
                     html += `<td>${amount !== 0 ? formatCurrency(amount) : '-'}</td>`;
                 });
                 
                 html += `
-                        <td>${formatCurrency(student.dailyTotal)}</td>
-                        <td>${formatCurrency(student.monthlyTotal)}</td>
-                        <td>${formatCurrency(student.grandTotal)}</td>
+                        <td>${formatCurrency(item.dailyTotal)}</td>
+                        <td>${formatCurrency(item.monthlyTotal)}</td>
+                        <td>${formatCurrency(item.grandTotal)}</td>
                     </tr>
                 `;
             });
@@ -2139,13 +2228,13 @@
             
             exportData.dates.forEach(date => {
                 const dateStr = date.toISOString().split('T')[0];
-                const dayTotal = exportData.students.reduce((sum, student) => sum + (student.dailyAmounts[dateStr] || 0), 0);
+                const dayTotal = exportData.students.reduce((sum, item) => sum + (item.dailyAmounts[dateStr] || 0), 0);
                 html += `<td><strong>${dayTotal !== 0 ? formatCurrency(dayTotal) : '-'}</strong></td>`;
             });
             
-            const totalDaily = exportData.students.reduce((sum, student) => sum + student.dailyTotal, 0);
-            const totalMonthly = exportData.students.reduce((sum, student) => sum + student.monthlyTotal, 0);
-            const totalGrand = exportData.students.reduce((sum, student) => sum + student.grandTotal, 0);
+            const totalDaily = exportData.students.reduce((sum, item) => sum + item.dailyTotal, 0);
+            const totalMonthly = exportData.students.reduce((sum, item) => sum + item.monthlyTotal, 0);
+            const totalGrand = exportData.students.reduce((sum, item) => sum + item.grandTotal, 0);
             
             html += `
                         <td><strong>${formatCurrency(totalDaily)}</strong></td>
@@ -2173,15 +2262,60 @@
             try {
                 showLoading();
                 
-                const canvas = await html2canvas(preview, {
-                    scale: 2,
+                // Set A4 width (29.7cm = 1123px at 96 DPI)
+                const a4WidthPx = 1123;
+                
+                // Create a temporary container with A4 width
+                const tempContainer = document.createElement('div');
+                tempContainer.style.width = a4WidthPx + 'px';
+                tempContainer.style.padding = '20px';
+                tempContainer.style.backgroundColor = '#ffffff';
+                tempContainer.style.fontFamily = 'Sarabun, sans-serif';
+                tempContainer.style.fontSize = '12px';
+                tempContainer.innerHTML = preview.innerHTML;
+                
+                // Adjust table styling for A4
+                const table = tempContainer.querySelector('table');
+                if (table) {
+                    table.style.width = '100%';
+                    table.style.fontSize = '11px';
+                    table.style.margin = '0 auto';
+                    
+                    // Adjust cell padding
+                    const cells = table.querySelectorAll('th, td');
+                    cells.forEach(cell => {
+                        cell.style.padding = '4px 6px';
+                        cell.style.textAlign = 'center';
+                        cell.style.border = '1px solid #000';
+                    });
+                }
+                
+                // Temporarily add to document
+                document.body.appendChild(tempContainer);
+                
+                const canvas = await html2canvas(tempContainer, {
+                    width: a4WidthPx + 40, // Add padding
                     useCORS: true,
                     allowTaint: true,
-                    backgroundColor: '#ffffff'
+                    backgroundColor: '#ffffff',
+                    scale: 2
                 });
                 
+                // Remove temporary container
+                document.body.removeChild(tempContainer);
+                
+                // Generate filename based on export type
+                const exportType = $('#exportType').val();
+                let filename = `รายงานการออมทรัพย์_${new Date().toISOString().split('T')[0]}`;
+                if (exportType === 'grade') {
+                    filename += '_รายชั้น';
+                } else {
+                    filename += '_รายบุคคล';
+                }
+                filename += '.png';
+                
                 const link = document.createElement('a');
-                link.download = `รายงานการออมทรัพย์_${new Date().toISOString().split('T')[0]}.png`;
+                link.download = filename;
                 link.href = canvas.toDataURL();
                 link.click();
                 
@@ -2273,8 +2407,17 @@
                 // Add to workbook
                 XLSX.utils.book_append_sheet(wb, ws, 'รายงานการออมทรัพย์');
                 
+                // Generate filename based on export type
+                let filename = `รายงานการออมทรัพย์_${new Date().toISOString().split('T')[0]}`;
+                if (exportData.exportType === 'grade') {
+                    filename += '_รายชั้น';
+                } else {
+                    filename += '_รายบุคคล';
+                }
+                filename += '.xlsx';
+                
                 // Save file
-                XLSX.writeFile(wb, `รายงานการออมทรัพย์_${new Date().toISOString().split('T')[0]}.xlsx`);
+                XLSX.writeFile(wb, filename);
                 
                 hideLoading();
                 
@@ -2297,5 +2440,5 @@
             }
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9633eb5fb4f97994',t:'MTc1MzE5NzU5OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96347f7420841d2f',t:'MTc1MzIwMzY2NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
