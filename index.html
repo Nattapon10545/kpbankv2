@@ -1,0 +1,2301 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ระบบออมทรัพย์นักเรียน - โรงเรียนบ้านกิ่วพร้าว</title>
+    
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Sarabun:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <!-- jQuery Validate -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery-validation@1.19.5/dist/jquery.validate.min.js"></script>
+    
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <!-- SheetJS for Excel export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <!-- html2canvas for image export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+    <style>
+        :root {
+            --primary-color: #87CEEB;
+            --secondary-color: #B0E0E6;
+            --accent-color: #4682B4;
+            --text-dark: #2C3E50;
+            --bg-light: #F8FBFF;
+        }
+
+        * {
+            font-family: 'Sarabun', sans-serif;
+        }
+
+        h1, h2, h3, h4, h5, h6, .navbar-brand {
+            font-family: 'Kanit', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, var(--bg-light) 0%, #E6F3FF 100%);
+            color: var(--text-dark);
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .navbar-brand {
+            font-weight: 600;
+            color: white !important;
+        }
+
+        .nav-link {
+            color: white !important;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            background: rgba(255,255,255,0.2);
+            border-radius: 8px;
+        }
+
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+            border: none;
+            border-radius: 10px;
+            font-weight: 500;
+            padding: 10px 20px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(70, 130, 180, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            border: none;
+            border-radius: 10px;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%);
+            border: none;
+            border-radius: 10px;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+            border: none;
+            border-radius: 10px;
+        }
+
+        .stats-card {
+            background: linear-gradient(135deg, white 0%, #F8FBFF 100%);
+            border-left: 5px solid var(--primary-color);
+        }
+
+        .school-logo {
+            width: 80px;
+            height: 80px;
+            object-fit: contain;
+        }
+
+        .table {
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.1);
+        }
+
+        .table thead {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+            color: white;
+        }
+
+        .modal-content {
+            border-radius: 15px;
+            border: none;
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--accent-color) 100%);
+            color: white;
+            border-radius: 15px 15px 0 0;
+        }
+
+        .form-control, .form-select {
+            border-radius: 10px;
+            border: 2px solid #E9ECEF;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(135, 206, 235, 0.25);
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .page-content {
+            display: none;
+        }
+
+        .page-content.active {
+            display: block;
+        }
+
+        .login-form {
+            max-width: 400px;
+            margin: 50px auto;
+            padding: 30px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .export-preview {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 10px;
+            padding: 15px;
+            background: white;
+        }
+
+        @media (max-width: 768px) {
+            .school-logo {
+                width: 60px;
+                height: 60px;
+            }
+            
+            .card {
+                margin-bottom: 20px;
+            }
+            
+            .table-responsive {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="#">
+                <img src="https://lh3.googleusercontent.com/d/1vQtWxoqhL4BWuOmDehWMGTqoRh63AThV" alt="โรงเรียนบ้านกิ่วพร้าว" class="school-logo me-3">
+                <div>
+                    <div>ระบบออมทรัพย์นักเรียน</div>
+                    <small style="font-size: 0.8em; opacity: 0.9;">โรงเรียนบ้านกิ่วพร้าว</small>
+                </div>
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#" onclick="showPage('dashboard')">
+                            <img src="https://img.icons8.com/fluency/20/dashboard.png" class="me-2">แดชบอร์ด
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="showPage('transaction')">
+                            <img src="https://img.icons8.com/fluency/20/money-transfer.png" class="me-2">ฝาก-ถอน
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="showPage('students')">
+                            <img src="https://img.icons8.com/fluency/20/student-male.png" class="me-2">รายชื่อนักเรียน
+                        </a>
+                    </li>
+                    <li class="nav-item" id="loginNav">
+                        <a class="nav-link" href="#" onclick="showLoginModal()">
+                            🔐 เข้าสู่ระบบ
+                        </a>
+                    </li>
+                    <li class="nav-item" id="logoutNav" style="display: none;">
+                        <a class="nav-link" href="#" onclick="logout()">
+                            🚪 ออกจากระบบ
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Dashboard Page -->
+        <div id="dashboardPage" class="page-content active">
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <img src="https://lh3.googleusercontent.com/d/1vQtWxoqhL4BWuOmDehWMGTqoRh63AThV" alt="โรงเรียนบ้านกิ่วพร้าว" class="school-logo mb-3">
+                            <h2 class="mb-0">ระบบออมทรัพย์นักเรียน</h2>
+                            <p class="text-muted">โรงเรียนบ้านกิ่วพร้าว</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter Controls -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5>ตัวกรองข้อมูล</h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <select class="form-select" id="filterType" onchange="updateDashboard()">
+                                        <option value="all">ทั้งหมด</option>
+                                        <option value="monthly">รายเดือน</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <select class="form-select" id="filterMonth" style="display: none;" onchange="updateDashboard()">
+                                        <option value="1">มกราคม</option>
+                                        <option value="2">กุมภาพันธ์</option>
+                                        <option value="3">มีนาคม</option>
+                                        <option value="4">เมษายน</option>
+                                        <option value="5">พฤษภาคม</option>
+                                        <option value="6">มิถุนายน</option>
+                                        <option value="7">กรกฎาคม</option>
+                                        <option value="8">สิงหาคม</option>
+                                        <option value="9">กันยายน</option>
+                                        <option value="10">ตุลาคม</option>
+                                        <option value="11">พฤศจิกายน</option>
+                                        <option value="12">ธันวาคม</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="row mb-4">
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <div class="card stats-card">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6 class="text-muted">อนุบาล</h6>
+                                    <h4 id="kindergartenTotal">0 บาท</h4>
+                                </div>
+                                <img src="https://img.icons8.com/fluency/48/baby.png">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <div class="card stats-card">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6 class="text-muted">ป.1</h6>
+                                    <h4 id="grade1Total">0 บาท</h4>
+                                </div>
+                                <img src="https://img.icons8.com/fluency/48/student-male.png">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <div class="card stats-card">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6 class="text-muted">ป.2</h6>
+                                    <h4 id="grade2Total">0 บาท</h4>
+                                </div>
+                                <img src="https://img.icons8.com/fluency/48/student-male.png">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <div class="card stats-card">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6 class="text-muted">ป.3</h6>
+                                    <h4 id="grade3Total">0 บาท</h4>
+                                </div>
+                                <img src="https://img.icons8.com/fluency/48/student-male.png">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <div class="card stats-card">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6 class="text-muted">ป.4</h6>
+                                    <h4 id="grade4Total">0 บาท</h4>
+                                </div>
+                                <img src="https://img.icons8.com/fluency/48/student-male.png">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <div class="card stats-card">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6 class="text-muted">ป.5</h6>
+                                    <h4 id="grade5Total">0 บาท</h4>
+                                </div>
+                                <img src="https://img.icons8.com/fluency/48/student-male.png">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <div class="card stats-card">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6 class="text-muted">ป.6</h6>
+                                    <h4 id="grade6Total">0 บาท</h4>
+                                </div>
+                                <img src="https://img.icons8.com/fluency/48/student-male.png">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6 mb-3">
+                    <div class="card stats-card">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <div>
+                                    <h6 class="text-muted">รวมทั้งหมด</h6>
+                                    <h4 id="totalAmount">0 บาท</h4>
+                                </div>
+                                <img src="https://img.icons8.com/fluency/48/money-bag.png">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chart -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">แผนภูมิยอดเงินฝากรวม</h5>
+                            <canvas id="savingsChart" width="400" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Transaction Page -->
+        <div id="transactionPage" class="page-content">
+            <div id="loginRequired" class="text-center">
+                <div class="card">
+                    <div class="card-body">
+                        <img src="https://img.icons8.com/fluency/64/lock.png" class="mb-3">
+                        <h4>กรุณาเข้าสู่ระบบ</h4>
+                        <p>คุณต้องเข้าสู่ระบบก่อนจึงจะสามารถใช้งานหน้าฝาก-ถอนได้</p>
+                        <button class="btn btn-primary" onclick="showLoginModal()">เข้าสู่ระบบ</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="transactionContent" style="display: none;">
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-body">
+                                <h4>ระบบฝาก-ถอนเงิน</h4>
+                                <p class="text-muted">สำหรับ: <span id="userInfo"></span></p>
+                                
+                                <div class="row">
+                                    <div class="col-md-2 mb-2">
+                                        <button class="btn btn-success w-100" onclick="showMigrateModal()">
+                                            <img src="https://img.icons8.com/fluency/20/import.png" class="me-2">ยกมา
+                                        </button>
+                                    </div>
+                                    <div class="col-md-2 mb-2">
+                                        <button class="btn btn-primary w-100" onclick="showDepositModal()">
+                                            <img src="https://img.icons8.com/fluency/20/plus.png" class="me-2">ฝาก
+                                        </button>
+                                    </div>
+                                    <div class="col-md-2 mb-2">
+                                        <button class="btn btn-warning w-100" onclick="showWithdrawModal()">
+                                            <img src="https://img.icons8.com/fluency/20/minus.png" class="me-2">ถอน
+                                        </button>
+                                    </div>
+                                    <div class="col-md-3 mb-2">
+                                        <button class="btn btn-info w-100" onclick="showExportModal()">
+                                            <img src="https://img.icons8.com/fluency/20/export.png" class="me-2">Export ข้อมูล
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Transaction History -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5>ประวัติการทำรายการ</h5>
+                                <div class="table-responsive">
+                                    <table class="table table-striped" id="transactionTable">
+                                        <thead>
+                                            <tr>
+                                                <th>วันที่</th>
+                                                <th>ชื่อนักเรียน</th>
+                                                <th>ชั้น</th>
+                                                <th>ประเภท</th>
+                                                <th>จำนวนเงิน</th>
+                                                <th>ยอดคงเหลือ</th>
+                                                <th>การจัดการ</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="transactionTableBody">
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                <!-- Pagination -->
+                                <nav>
+                                    <ul class="pagination justify-content-center" id="transactionPagination">
+                                    </ul>
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Students Page -->
+        <div id="studentsPage" class="page-content">
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h4>รายชื่อนักเรียน</h4>
+                                <button class="btn btn-primary" onclick="showAddStudentModal()" id="addStudentBtn" style="display: none;">
+                                    <img src="https://img.icons8.com/fluency/20/plus.png" class="me-2">เพิ่มนักเรียน
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-striped" id="studentsTable">
+                                    <thead>
+                                        <tr>
+                                            <th>ลำดับ</th>
+                                            <th>ชื่อ-นามสกุล</th>
+                                            <th>ชั้น</th>
+                                            <th>ยอดเงินปัจจุบัน</th>
+                                            <th>การจัดการ</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="studentsTableBody">
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <!-- Pagination -->
+                            <nav>
+                                <ul class="pagination justify-content-center" id="studentsPagination">
+                                </ul>
+                            </nav>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div class="modal fade" id="loginModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">เข้าสู่ระบบ</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="loginForm">
+                        <div class="mb-3">
+                            <label class="form-label">ชื่อผู้ใช้</label>
+                            <input type="text" class="form-control" id="username" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">รหัสผ่าน</label>
+                            <input type="password" class="form-control" id="password" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">เข้าสู่ระบบ</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Student Modal -->
+    <div class="modal fade" id="addStudentModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">เพิ่มนักเรียน</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addStudentForm">
+                        <div id="studentInputs">
+                            <!-- Student inputs will be generated here -->
+                        </div>
+                        <button type="submit" class="btn btn-primary">บันทึก</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Student Modal -->
+    <div class="modal fade" id="editStudentModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">แก้ไขข้อมูลนักเรียน</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editStudentForm">
+                        <input type="hidden" id="editStudentId">
+                        <div class="mb-3">
+                            <label class="form-label">ชื่อ-นามสกุล</label>
+                            <input type="text" class="form-control" id="editStudentName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">ชั้น</label>
+                            <select class="form-select" id="editStudentGrade" required>
+                                <option value="">เลือกชั้น</option>
+                                <option value="อนุบาล">อนุบาล</option>
+                                <option value="ป.1">ป.1</option>
+                                <option value="ป.2">ป.2</option>
+                                <option value="ป.3">ป.3</option>
+                                <option value="ป.4">ป.4</option>
+                                <option value="ป.5">ป.5</option>
+                                <option value="ป.6">ป.6</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">บันทึก</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Migrate Modal -->
+    <div class="modal fade" id="migrateModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">ยกเงินมา</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="migrateForm">
+                        <div class="mb-3">
+                            <label class="form-label">วันที่ยกมา</label>
+                            <input type="date" class="form-control" id="migrateDate" required>
+                        </div>
+                        <div id="migrateStudentList">
+                            <!-- Student list will be populated here -->
+                        </div>
+                        <button type="submit" class="btn btn-success">บันทึก</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Deposit Modal -->
+    <div class="modal fade" id="depositModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">ฝากเงิน</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="depositForm">
+                        <div class="mb-3">
+                            <label class="form-label">วันที่ฝาก</label>
+                            <input type="date" class="form-control" id="depositDate" required>
+                        </div>
+                        <div id="depositStudentList">
+                            <!-- Student list will be populated here -->
+                        </div>
+                        <button type="submit" class="btn btn-primary">บันทึก</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Withdraw Modal -->
+    <div class="modal fade" id="withdrawModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">ถอนเงิน</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="withdrawForm">
+                        <div class="mb-3">
+                            <label class="form-label">วันที่ถอน</label>
+                            <input type="date" class="form-control" id="withdrawDate" required>
+                        </div>
+                        <div id="withdrawStudentList">
+                            <!-- Student list will be populated here -->
+                        </div>
+                        <button type="submit" class="btn btn-warning">บันทึก</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Modal -->
+    <div class="modal fade" id="exportModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Export ข้อมูล</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">วันที่เริ่มต้น</label>
+                            <input type="date" class="form-control" id="exportStartDate">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">วันที่สิ้นสุด</label>
+                            <input type="date" class="form-control" id="exportEndDate">
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <button class="btn btn-info me-2" onclick="generatePreview()">แสดงตัวอย่าง</button>
+                            <button class="btn btn-success me-2" onclick="exportToImage()">Export รูปภาพ</button>
+                            <button class="btn btn-primary" onclick="exportToExcel()">Export Excel</button>
+                        </div>
+                    </div>
+                    
+                    <div id="exportPreview" class="export-preview" style="display: none;">
+                        <!-- Preview will be shown here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Transaction Modal -->
+    <div class="modal fade" id="editTransactionModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">แก้ไขรายการ</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="editTransactionForm">
+                        <input type="hidden" id="editTransactionId">
+                        <div class="mb-3">
+                            <label class="form-label">วันที่</label>
+                            <input type="date" class="form-control" id="editTransactionDate" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">จำนวนเงิน</label>
+                            <input type="number" class="form-control" id="editTransactionAmount" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">บันทึก</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        // Global variables
+        let currentUser = null;
+        let studentsData = [];
+        let transactionsData = [];
+        let currentPage = 1;
+        let itemsPerPage = 15;
+        let studentsCurrentPage = 1;
+        let studentsItemsPerPage = 20;
+        let savingsChart = null;
+
+        const API_URL = 'https://script.google.com/macros/s/AKfycby8ckt4n-fUuvrwUjHNe4Ctkb7Ns3BjcRLhBPuQjdwcsSQUKwFEBkGyCAlzHiPYXaeN/exec';
+        const SHEET_ID = '1yDDNjYVGEQtM5VThEIdMrIvZ5mATQz8bqjIdtWEoWRw';
+
+        // User credentials
+        const users = {
+            'P1': { password: 'p1123456', grade: 'ป.1', name: 'ครูประจำชั้น ป.1' },
+            'P2': { password: 'p2123456', grade: 'ป.2', name: 'ครูประจำชั้น ป.2' },
+            'P3': { password: 'p3123456', grade: 'ป.3', name: 'ครูประจำชั้น ป.3' },
+            'P4': { password: 'p4123456', grade: 'ป.4', name: 'ครูประจำชั้น ป.4' },
+            'P5': { password: 'p5123456', grade: 'ป.5', name: 'ครูประจำชั้น ป.5' },
+            'P6': { password: 'p6123456', grade: 'ป.6', name: 'ครูประจำชั้น ป.6' },
+            'K123': { password: 'k123123456', grade: 'อนุบาล', name: 'ครูประจำชั้นอนุบาล' },
+            'admin': { password: 'admin57030010', grade: 'all', name: 'ผู้ดูแลระบบ' }
+        };
+
+        // Initialize
+        $(document).ready(function() {
+            loadData();
+            setupEventHandlers();
+            updateDashboard();
+            
+            // Set default dates
+            const today = new Date().toISOString().split('T')[0];
+            $('#migrateDate, #depositDate, #withdrawDate, #exportStartDate, #exportEndDate').val(today);
+        });
+
+        function setupEventHandlers() {
+            // Login form
+            $('#loginForm').on('submit', function(e) {
+                e.preventDefault();
+                login();
+            });
+
+            // Filter change
+            $('#filterType').on('change', function() {
+                if ($(this).val() === 'monthly') {
+                    $('#filterMonth').show();
+                } else {
+                    $('#filterMonth').hide();
+                }
+                updateDashboard();
+            });
+
+            // Forms
+            $('#addStudentForm').on('submit', function(e) {
+                e.preventDefault();
+                addStudents();
+            });
+
+            $('#editStudentForm').on('submit', function(e) {
+                e.preventDefault();
+                editStudent();
+            });
+
+            $('#migrateForm').on('submit', function(e) {
+                e.preventDefault();
+                migrateStudents();
+            });
+
+            $('#depositForm').on('submit', function(e) {
+                e.preventDefault();
+                depositMoney();
+            });
+
+            $('#withdrawForm').on('submit', function(e) {
+                e.preventDefault();
+                withdrawMoney();
+            });
+
+            $('#editTransactionForm').on('submit', function(e) {
+                e.preventDefault();
+                editTransaction();
+            });
+        }
+
+        function showLoading() {
+            $('#loadingOverlay').show();
+        }
+
+        function hideLoading() {
+            $('#loadingOverlay').hide();
+        }
+
+        function showPage(page) {
+            $('.page-content').removeClass('active');
+            $('.nav-link').removeClass('active');
+            
+            $(`#${page}Page`).addClass('active');
+            $(`.nav-link[onclick="showPage('${page}')"]`).addClass('active');
+            
+            if (page === 'transaction') {
+                updateTransactionPage();
+            } else if (page === 'students') {
+                loadStudents();
+            }
+        }
+
+        function showLoginModal() {
+            $('#loginModal').modal('show');
+        }
+
+        function login() {
+            const username = $('#username').val();
+            const password = $('#password').val();
+            
+            if (users[username] && users[username].password === password) {
+                currentUser = {
+                    username: username,
+                    grade: users[username].grade,
+                    name: users[username].name
+                };
+                
+                $('#loginModal').modal('hide');
+                $('#loginNav').hide();
+                $('#logoutNav').show();
+                
+                updateTransactionPage();
+                updateStudentsPage();
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: 'เข้าสู่ระบบสำเร็จ',
+                    text: `ยินดีต้อนรับ ${currentUser.name}`,
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'เข้าสู่ระบบไม่สำเร็จ',
+                    text: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง'
+                });
+            }
+        }
+
+        function logout() {
+            currentUser = null;
+            $('#loginNav').show();
+            $('#logoutNav').hide();
+            $('#transactionContent').hide();
+            $('#loginRequired').show();
+            $('#addStudentBtn').hide();
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'ออกจากระบบสำเร็จ',
+                timer: 1500,
+                showConfirmButton: false
+            });
+        }
+
+        function updateTransactionPage() {
+            if (currentUser) {
+                $('#loginRequired').hide();
+                $('#transactionContent').show();
+                $('#userInfo').text(currentUser.name);
+                loadTransactions();
+            } else {
+                $('#loginRequired').show();
+                $('#transactionContent').hide();
+            }
+        }
+
+        function updateStudentsPage() {
+            if (currentUser) {
+                $('#addStudentBtn').show();
+            } else {
+                $('#addStudentBtn').hide();
+            }
+        }
+
+        async function loadData() {
+            try {
+                showLoading();
+                
+                // Load both students and transactions in parallel for speed
+                const [studentsResponse, transactionsResponse] = await Promise.all([
+                    fetch(`${API_URL}?action=getStudents&sheetId=${SHEET_ID}&cache=${Date.now()}`),
+                    fetch(`${API_URL}?action=getTransactions&sheetId=${SHEET_ID}&cache=${Date.now()}`)
+                ]);
+                
+                const [studentsResult, transactionsResult] = await Promise.all([
+                    studentsResponse.json(),
+                    transactionsResponse.json()
+                ]);
+                
+                if (studentsResult.success) {
+                    studentsData = studentsResult.data || [];
+                }
+                
+                if (transactionsResult.success) {
+                    transactionsData = transactionsResult.data || [];
+                }
+                
+                hideLoading();
+            } catch (error) {
+                console.error('Error loading data:', error);
+                hideLoading();
+            }
+        }
+
+        function updateDashboard() {
+            const filterType = $('#filterType').val();
+            const filterMonth = $('#filterMonth').val();
+            
+            let filteredTransactions = transactionsData;
+            
+            if (filterType === 'monthly' && filterMonth) {
+                const currentYear = new Date().getFullYear();
+                filteredTransactions = transactionsData.filter(t => {
+                    const transactionDate = new Date(t.date);
+                    return transactionDate.getMonth() + 1 == filterMonth && 
+                           transactionDate.getFullYear() == currentYear;
+                });
+            }
+            
+            // Calculate totals by grade
+            const totals = {
+                'อนุบาล': 0,
+                'ป.1': 0,
+                'ป.2': 0,
+                'ป.3': 0,
+                'ป.4': 0,
+                'ป.5': 0,
+                'ป.6': 0
+            };
+            
+            // Calculate current balances for each student
+            const studentBalances = {};
+            studentsData.forEach(student => {
+                studentBalances[student.id] = 0;
+            });
+            
+            filteredTransactions.forEach(transaction => {
+                const student = studentsData.find(s => s.id === transaction.studentId);
+                if (student) {
+                    const amount = parseFloat(transaction.amount) || 0;
+                    if (transaction.type === 'deposit' || transaction.type === 'migrate') {
+                        studentBalances[student.id] += amount;
+                    } else if (transaction.type === 'withdraw') {
+                        studentBalances[student.id] -= amount;
+                    }
+                }
+            });
+            
+            // Sum by grade
+            studentsData.forEach(student => {
+                const balance = studentBalances[student.id] || 0;
+                if (totals.hasOwnProperty(student.grade)) {
+                    totals[student.grade] += balance;
+                }
+            });
+            
+            // Update UI
+            $('#kindergartenTotal').text(formatCurrency(totals['อนุบาล']));
+            $('#grade1Total').text(formatCurrency(totals['ป.1']));
+            $('#grade2Total').text(formatCurrency(totals['ป.2']));
+            $('#grade3Total').text(formatCurrency(totals['ป.3']));
+            $('#grade4Total').text(formatCurrency(totals['ป.4']));
+            $('#grade5Total').text(formatCurrency(totals['ป.5']));
+            $('#grade6Total').text(formatCurrency(totals['ป.6']));
+            
+            const totalAmount = Object.values(totals).reduce((sum, amount) => sum + amount, 0);
+            $('#totalAmount').text(formatCurrency(totalAmount));
+            
+            // Update chart
+            updateChart(totals);
+        }
+
+        function updateChart(totals) {
+            const ctx = document.getElementById('savingsChart').getContext('2d');
+            
+            if (savingsChart) {
+                savingsChart.destroy();
+            }
+            
+            savingsChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['อนุบาล', 'ป.1', 'ป.2', 'ป.3', 'ป.4', 'ป.5', 'ป.6'],
+                    datasets: [{
+                        label: 'ยอดเงินฝาก (บาท)',
+                        data: [
+                            totals['อนุบาล'],
+                            totals['ป.1'],
+                            totals['ป.2'],
+                            totals['ป.3'],
+                            totals['ป.4'],
+                            totals['ป.5'],
+                            totals['ป.6']
+                        ],
+                        backgroundColor: [
+                            'rgba(135, 206, 235, 0.8)',
+                            'rgba(176, 224, 230, 0.8)',
+                            'rgba(70, 130, 180, 0.8)',
+                            'rgba(135, 206, 235, 0.8)',
+                            'rgba(176, 224, 230, 0.8)',
+                            'rgba(70, 130, 180, 0.8)',
+                            'rgba(135, 206, 235, 0.8)'
+                        ],
+                        borderColor: [
+                            'rgba(135, 206, 235, 1)',
+                            'rgba(176, 224, 230, 1)',
+                            'rgba(70, 130, 180, 1)',
+                            'rgba(135, 206, 235, 1)',
+                            'rgba(176, 224, 230, 1)',
+                            'rgba(70, 130, 180, 1)',
+                            'rgba(135, 206, 235, 1)'
+                        ],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return formatCurrency(value);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('th-TH').format(amount) + ' บาท';
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            const months = [
+                'ม.ค.', 'ก.ย.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
+                'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'
+            ];
+            
+            const day = date.getDate();
+            const month = months[date.getMonth()];
+            const year = (date.getFullYear() + 543).toString().substr(-2);
+            
+            return `${day} ${month} ${year}`;
+        }
+
+        function loadStudents() {
+            const startIndex = (studentsCurrentPage - 1) * studentsItemsPerPage;
+            const endIndex = startIndex + studentsItemsPerPage;
+            const paginatedStudents = studentsData.slice(startIndex, endIndex);
+            
+            let html = '';
+            paginatedStudents.forEach((student, index) => {
+                const balance = calculateStudentBalance(student.id);
+                html += `
+                    <tr>
+                        <td>${startIndex + index + 1}</td>
+                        <td>${student.name}</td>
+                        <td>${student.grade}</td>
+                        <td>${formatCurrency(balance)}</td>
+                        <td>
+                            <button class="btn btn-sm btn-warning me-1" onclick="editStudentModal('${student.id}')" ${!currentUser ? 'disabled' : ''}>
+                                <img src="https://img.icons8.com/fluency/16/edit.png"> แก้ไข
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteStudent('${student.id}')" ${!currentUser ? 'disabled' : ''}>
+                                <img src="https://img.icons8.com/fluency/16/delete.png"> ลบ
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            $('#studentsTableBody').html(html);
+            updateStudentsPagination();
+        }
+
+        function calculateStudentBalance(studentId) {
+            let balance = 0;
+            transactionsData.forEach(transaction => {
+                if (transaction.studentId === studentId) {
+                    const amount = parseFloat(transaction.amount) || 0;
+                    if (transaction.type === 'deposit' || transaction.type === 'migrate') {
+                        balance += amount;
+                    } else if (transaction.type === 'withdraw') {
+                        balance -= amount;
+                    }
+                }
+            });
+            return balance;
+        }
+
+        function updateStudentsPagination() {
+            const totalPages = Math.ceil(studentsData.length / studentsItemsPerPage);
+            let html = '';
+            
+            // Previous button
+            html += `<li class="page-item ${studentsCurrentPage === 1 ? 'disabled' : ''}">
+                <a class="page-link" href="#" onclick="changeStudentsPage(${studentsCurrentPage - 1})">ก่อนหน้า</a>
+            </li>`;
+            
+            // Page numbers
+            for (let i = 1; i <= totalPages; i++) {
+                html += `<li class="page-item ${i === studentsCurrentPage ? 'active' : ''}">
+                    <a class="page-link" href="#" onclick="changeStudentsPage(${i})">${i}</a>
+                </li>`;
+            }
+            
+            // Next button
+            html += `<li class="page-item ${studentsCurrentPage === totalPages ? 'disabled' : ''}">
+                <a class="page-link" href="#" onclick="changeStudentsPage(${studentsCurrentPage + 1})">ถัดไป</a>
+            </li>`;
+            
+            $('#studentsPagination').html(html);
+        }
+
+        function changeStudentsPage(page) {
+            const totalPages = Math.ceil(studentsData.length / studentsItemsPerPage);
+            if (page >= 1 && page <= totalPages) {
+                studentsCurrentPage = page;
+                loadStudents();
+            }
+        }
+
+        function showAddStudentModal() {
+            if (!currentUser) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'กรุณาเข้าสู่ระบบ',
+                    text: 'คุณต้องเข้าสู่ระบบก่อนจึงจะสามารถเพิ่มนักเรียนได้'
+                });
+                return;
+            }
+            
+            let html = '';
+            for (let i = 1; i <= 10; i++) {
+                html += `
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">ชื่อ-นามสกุล ${i}</label>
+                            <input type="text" class="form-control" name="studentName${i}" placeholder="ชื่อ-นามสกุล">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">ชั้น ${i}</label>
+                            <select class="form-select" name="studentGrade${i}">
+                                <option value="">เลือกชั้น</option>
+                                <option value="อนุบาล">อนุบาล</option>
+                                <option value="ป.1">ป.1</option>
+                                <option value="ป.2">ป.2</option>
+                                <option value="ป.3">ป.3</option>
+                                <option value="ป.4">ป.4</option>
+                                <option value="ป.5">ป.5</option>
+                                <option value="ป.6">ป.6</option>
+                            </select>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            $('#studentInputs').html(html);
+            $('#addStudentModal').modal('show');
+        }
+
+        async function addStudents() {
+            const students = [];
+            
+            for (let i = 1; i <= 10; i++) {
+                const name = $(`input[name="studentName${i}"]`).val().trim();
+                const grade = $(`select[name="studentGrade${i}"]`).val();
+                
+                if (name && grade) {
+                    students.push({
+                        id: 'S' + Date.now().toString(36) + i.toString(36),
+                        name: name,
+                        grade: grade
+                    });
+                }
+            }
+            
+            if (students.length === 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'ไม่มีข้อมูล',
+                    text: 'กรุณากรอกข้อมูลนักเรียนอย่างน้อย 1 คน'
+                });
+                return;
+            }
+            
+            try {
+                showLoading();
+                
+                // Batch save all students in one request
+                const params = new URLSearchParams({
+                    action: 'addStudentsBatch',
+                    sheetId: SHEET_ID,
+                    students: JSON.stringify(students)
+                });
+                
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: params
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    studentsData.push(...students);
+                } else {
+                    // Fallback to individual saves
+                    for (const student of students) {
+                        const params = new URLSearchParams({
+                            action: 'addStudent',
+                            sheetId: SHEET_ID,
+                            id: student.id,
+                            name: student.name,
+                            grade: student.grade
+                        });
+                        
+                        const response = await fetch(API_URL, {
+                            method: 'POST',
+                            body: params
+                        });
+                        
+                        const result = await response.json();
+                        if (result.success) {
+                            studentsData.push(student);
+                        }
+                    }
+                }
+                
+                hideLoading();
+                $('#addStudentModal').modal('hide');
+                loadStudents();
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: 'เพิ่มนักเรียนสำเร็จ',
+                    text: `เพิ่มนักเรียน ${students.length} คน`,
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+                
+            } catch (error) {
+                hideLoading();
+                console.error('Error adding students:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'เกิดข้อผิดพลาด',
+                    text: 'ไม่สามารถเพิ่มนักเรียนได้'
+                });
+            }
+        }
+
+        function editStudentModal(studentId) {
+            const student = studentsData.find(s => s.id == studentId);
+            if (student) {
+                $('#editStudentId').val(student.id);
+                $('#editStudentName').val(student.name);
+                $('#editStudentGrade').val(student.grade);
+                $('#editStudentModal').modal('show');
+            }
+        }
+
+        async function editStudent() {
+            const id = $('#editStudentId').val();
+            const name = $('#editStudentName').val();
+            const grade = $('#editStudentGrade').val();
+            
+            try {
+                showLoading();
+                
+                const params = new URLSearchParams({
+                    action: 'editStudent',
+                    sheetId: SHEET_ID,
+                    id: id,
+                    name: name,
+                    grade: grade
+                });
+                
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: params
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    const studentIndex = studentsData.findIndex(s => s.id == id);
+                    if (studentIndex !== -1) {
+                        studentsData[studentIndex].name = name;
+                        studentsData[studentIndex].grade = grade;
+                    }
+                    
+                    hideLoading();
+                    $('#editStudentModal').modal('hide');
+                    loadStudents();
+                    
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'แก้ไขสำเร็จ',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                } else {
+                    throw new Error(result.message);
+                }
+                
+            } catch (error) {
+                hideLoading();
+                console.error('Error editing student:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'เกิดข้อผิดพลาด',
+                    text: 'ไม่สามารถแก้ไขข้อมูลได้'
+                });
+            }
+        }
+
+        async function deleteStudent(studentId) {
+            const result = await Swal.fire({
+                title: 'ยืนยันการลบ',
+                text: 'คุณต้องการลบนักเรียนคนนี้หรือไม่?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'ลบ',
+                cancelButtonText: 'ยกเลิก'
+            });
+            
+            if (result.isConfirmed) {
+                try {
+                    showLoading();
+                    
+                    const params = new URLSearchParams({
+                        action: 'deleteStudent',
+                        sheetId: SHEET_ID,
+                        id: studentId
+                    });
+                    
+                    const response = await fetch(API_URL, {
+                        method: 'POST',
+                        body: params
+                    });
+                    
+                    const apiResult = await response.json();
+                    
+                    if (apiResult.success) {
+                        studentsData = studentsData.filter(s => s.id != studentId);
+                        transactionsData = transactionsData.filter(t => t.studentId != studentId);
+                        
+                        hideLoading();
+                        loadStudents();
+                        updateDashboard();
+                        
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'ลบสำเร็จ',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                    } else {
+                        throw new Error(apiResult.message);
+                    }
+                    
+                } catch (error) {
+                    hideLoading();
+                    console.error('Error deleting student:', error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'เกิดข้อผิดพลาด',
+                        text: 'ไม่สามารถลบนักเรียนได้'
+                    });
+                }
+            }
+        }
+
+        function showMigrateModal() {
+            const userStudents = getUserStudents();
+            let html = '';
+            
+            userStudents.forEach(student => {
+                html += `
+                    <div class="row mb-2 align-items-center">
+                        <div class="col-md-6">
+                            <label class="form-label">${student.name} (${student.grade})</label>
+                        </div>
+                        <div class="col-md-6">
+                            <input type="number" class="form-control" name="migrate_${student.id}" placeholder="จำนวนเงินเริ่มต้น" min="0" step="0.01">
+                        </div>
+                    </div>
+                `;
+            });
+            
+            $('#migrateStudentList').html(html);
+            $('#migrateModal').modal('show');
+        }
+
+        function showDepositModal() {
+            const userStudents = getUserStudents();
+            let html = '';
+            
+            userStudents.forEach(student => {
+                html += `
+                    <div class="row mb-2 align-items-center">
+                        <div class="col-md-6">
+                            <label class="form-label">${student.name} (${student.grade})</label>
+                        </div>
+                        <div class="col-md-6">
+                            <input type="number" class="form-control" name="deposit_${student.id}" placeholder="จำนวนเงินฝาก" min="0" step="0.01">
+                        </div>
+                    </div>
+                `;
+            });
+            
+            $('#depositStudentList').html(html);
+            $('#depositModal').modal('show');
+        }
+
+        function showWithdrawModal() {
+            const userStudents = getUserStudents();
+            let html = '';
+            
+            userStudents.forEach(student => {
+                const balance = calculateStudentBalance(student.id);
+                html += `
+                    <div class="row mb-2 align-items-center">
+                        <div class="col-md-6">
+                            <label class="form-label">${student.name} (${student.grade})</label>
+                            <small class="text-muted d-block">ยอดคงเหลือ: ${formatCurrency(balance)}</small>
+                        </div>
+                        <div class="col-md-6">
+                            <input type="number" class="form-control" name="withdraw_${student.id}" placeholder="จำนวนเงินถอน" min="0" max="${balance}" step="0.01">
+                        </div>
+                    </div>
+                `;
+            });
+            
+            $('#withdrawStudentList').html(html);
+            $('#withdrawModal').modal('show');
+        }
+
+        function getUserStudents() {
+            if (!currentUser) return [];
+            
+            if (currentUser.grade === 'all') {
+                return studentsData;
+            } else {
+                return studentsData.filter(s => s.grade === currentUser.grade);
+            }
+        }
+
+        async function migrateStudents() {
+            const date = $('#migrateDate').val();
+            const userStudents = getUserStudents();
+            const transactions = [];
+            
+            userStudents.forEach(student => {
+                const amount = parseFloat($(`input[name="migrate_${student.id}"]`).val()) || 0;
+                if (amount > 0) {
+                    transactions.push({
+                        id: 'T' + Date.now().toString(36) + Math.random().toString(36).substr(2, 3),
+                        studentId: student.id,
+                        type: 'migrate',
+                        amount: amount,
+                        date: date,
+                        user: currentUser.username
+                    });
+                }
+            });
+            
+            if (transactions.length === 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'ไม่มีข้อมูล',
+                    text: 'กรุณากรอกจำนวนเงินอย่างน้อย 1 รายการ'
+                });
+                return;
+            }
+            
+            await saveTransactions(transactions, 'ยกเงินมาสำเร็จ');
+            $('#migrateModal').modal('hide');
+        }
+
+        async function depositMoney() {
+            const date = $('#depositDate').val();
+            const userStudents = getUserStudents();
+            const transactions = [];
+            
+            userStudents.forEach(student => {
+                const amount = parseFloat($(`input[name="deposit_${student.id}"]`).val()) || 0;
+                if (amount > 0) {
+                    transactions.push({
+                        id: 'T' + Date.now().toString(36) + Math.random().toString(36).substr(2, 3),
+                        studentId: student.id,
+                        type: 'deposit',
+                        amount: amount,
+                        date: date,
+                        user: currentUser.username
+                    });
+                }
+            });
+            
+            if (transactions.length === 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'ไม่มีข้อมูล',
+                    text: 'กรุณากรอกจำนวนเงินอย่างน้อย 1 รายการ'
+                });
+                return;
+            }
+            
+            await saveTransactions(transactions, 'ฝากเงินสำเร็จ');
+            $('#depositModal').modal('hide');
+        }
+
+        async function withdrawMoney() {
+            const date = $('#withdrawDate').val();
+            const userStudents = getUserStudents();
+            const transactions = [];
+            
+            userStudents.forEach(student => {
+                const amount = parseFloat($(`input[name="withdraw_${student.id}"]`).val()) || 0;
+                const balance = calculateStudentBalance(student.id);
+                
+                if (amount > 0) {
+                    if (amount > balance) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'จำนวนเงินไม่เพียงพอ',
+                            text: `${student.name} มียอดคงเหลือ ${formatCurrency(balance)} ไม่สามารถถอน ${formatCurrency(amount)} ได้`
+                        });
+                        return;
+                    }
+                    
+                    transactions.push({
+                        id: 'T' + Date.now().toString(36) + Math.random().toString(36).substr(2, 3),
+                        studentId: student.id,
+                        type: 'withdraw',
+                        amount: amount,
+                        date: date,
+                        user: currentUser.username
+                    });
+                }
+            });
+            
+            if (transactions.length === 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'ไม่มีข้อมูล',
+                    text: 'กรุณากรอกจำนวนเงินอย่างน้อย 1 รายการ'
+                });
+                return;
+            }
+            
+            await saveTransactions(transactions, 'ถอนเงินสำเร็จ');
+            $('#withdrawModal').modal('hide');
+        }
+
+        async function saveTransactions(transactions, successMessage) {
+            try {
+                showLoading();
+                
+                // Batch save all transactions in one request
+                const params = new URLSearchParams({
+                    action: 'addTransactionsBatch',
+                    sheetId: SHEET_ID,
+                    transactions: JSON.stringify(transactions)
+                });
+                
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: params
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    // Add all transactions to local data at once
+                    transactionsData.push(...transactions);
+                    
+                    hideLoading();
+                    loadTransactions();
+                    updateDashboard();
+                    
+                    Swal.fire({
+                        icon: 'success',
+                        title: successMessage,
+                        text: `บันทึก ${transactions.length} รายการ`,
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                } else {
+                    throw new Error(result.message || 'Failed to save transactions');
+                }
+                
+            } catch (error) {
+                hideLoading();
+                console.error('Error saving transactions:', error);
+                
+                // Fallback to individual saves if batch fails
+                try {
+                    for (const transaction of transactions) {
+                        const params = new URLSearchParams({
+                            action: 'addTransaction',
+                            sheetId: SHEET_ID,
+                            id: transaction.id,
+                            studentId: transaction.studentId,
+                            type: transaction.type,
+                            amount: transaction.amount,
+                            date: transaction.date,
+                            user: transaction.user
+                        });
+                        
+                        const response = await fetch(API_URL, {
+                            method: 'POST',
+                            body: params
+                        });
+                        
+                        const result = await response.json();
+                        if (result.success) {
+                            transactionsData.push(transaction);
+                        }
+                    }
+                    
+                    hideLoading();
+                    loadTransactions();
+                    updateDashboard();
+                    
+                    Swal.fire({
+                        icon: 'success',
+                        title: successMessage,
+                        text: `บันทึก ${transactions.length} รายการ`,
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                    
+                } catch (fallbackError) {
+                    hideLoading();
+                    console.error('Fallback save also failed:', fallbackError);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'เกิดข้อผิดพลาด',
+                        text: 'ไม่สามารถบันทึกรายการได้'
+                    });
+                }
+            }
+        }
+
+        function loadTransactions() {
+            let userTransactions = transactionsData;
+            
+            if (currentUser && currentUser.grade !== 'all') {
+                userTransactions = transactionsData.filter(t => {
+                    const student = studentsData.find(s => s.id === t.studentId);
+                    return student && student.grade === currentUser.grade;
+                });
+            }
+            
+            // Sort by date descending
+            userTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+            
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const paginatedTransactions = userTransactions.slice(startIndex, endIndex);
+            
+            let html = '';
+            paginatedTransactions.forEach(transaction => {
+                const student = studentsData.find(s => s.id === transaction.studentId);
+                if (student) {
+                    const balance = calculateStudentBalanceUpToDate(student.id, transaction.date);
+                    const typeText = {
+                        'deposit': 'ฝาก',
+                        'withdraw': 'ถอน',
+                        'migrate': 'ยกมา'
+                    };
+                    
+                    const typeClass = {
+                        'deposit': 'text-success',
+                        'withdraw': 'text-danger',
+                        'migrate': 'text-info'
+                    };
+                    
+                    html += `
+                        <tr>
+                            <td>${formatDate(transaction.date)}</td>
+                            <td>${student.name}</td>
+                            <td>${student.grade}</td>
+                            <td><span class="${typeClass[transaction.type]}">${typeText[transaction.type]}</span></td>
+                            <td>${formatCurrency(transaction.amount)}</td>
+                            <td>${formatCurrency(balance)}</td>
+                            <td>
+                                <button class="btn btn-sm btn-warning me-1" onclick="editTransactionModal('${transaction.id}')">
+                                    <img src="https://img.icons8.com/fluency/16/edit.png"> แก้ไข
+                                </button>
+                                <button class="btn btn-sm btn-danger" onclick="deleteTransaction('${transaction.id}')">
+                                    <img src="https://img.icons8.com/fluency/16/delete.png"> ลบ
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                }
+            });
+            
+            $('#transactionTableBody').html(html);
+            updateTransactionPagination(userTransactions.length);
+        }
+
+        function calculateStudentBalanceUpToDate(studentId, upToDate) {
+            let balance = 0;
+            const sortedTransactions = transactionsData
+                .filter(t => t.studentId === studentId && new Date(t.date) <= new Date(upToDate))
+                .sort((a, b) => new Date(a.date) - new Date(b.date));
+            
+            sortedTransactions.forEach(transaction => {
+                const amount = parseFloat(transaction.amount) || 0;
+                if (transaction.type === 'deposit' || transaction.type === 'migrate') {
+                    balance += amount;
+                } else if (transaction.type === 'withdraw') {
+                    balance -= amount;
+                }
+            });
+            
+            return balance;
+        }
+
+        function updateTransactionPagination(totalItems) {
+            const totalPages = Math.ceil(totalItems / itemsPerPage);
+            let html = '';
+            
+            // Previous button
+            html += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">
+                <a class="page-link" href="#" onclick="changeTransactionPage(${currentPage - 1})">ก่อนหน้า</a>
+            </li>`;
+            
+            // Page numbers
+            for (let i = 1; i <= totalPages; i++) {
+                html += `<li class="page-item ${i === currentPage ? 'active' : ''}">
+                    <a class="page-link" href="#" onclick="changeTransactionPage(${i})">${i}</a>
+                </li>`;
+            }
+            
+            // Next button
+            html += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">
+                <a class="page-link" href="#" onclick="changeTransactionPage(${currentPage + 1})">ถัดไป</a>
+            </li>`;
+            
+            $('#transactionPagination').html(html);
+        }
+
+        function changeTransactionPage(page) {
+            let userTransactions = transactionsData;
+            
+            if (currentUser && currentUser.grade !== 'all') {
+                userTransactions = transactionsData.filter(t => {
+                    const student = studentsData.find(s => s.id === t.studentId);
+                    return student && student.grade === currentUser.grade;
+                });
+            }
+            
+            const totalPages = Math.ceil(userTransactions.length / itemsPerPage);
+            if (page >= 1 && page <= totalPages) {
+                currentPage = page;
+                loadTransactions();
+            }
+        }
+
+        function editTransactionModal(transactionId) {
+            const transaction = transactionsData.find(t => t.id == transactionId);
+            if (transaction) {
+                $('#editTransactionId').val(transaction.id);
+                $('#editTransactionDate').val(transaction.date);
+                $('#editTransactionAmount').val(transaction.amount);
+                $('#editTransactionModal').modal('show');
+            }
+        }
+
+        async function editTransaction() {
+            const id = $('#editTransactionId').val();
+            const date = $('#editTransactionDate').val();
+            const amount = $('#editTransactionAmount').val();
+            
+            try {
+                showLoading();
+                
+                const params = new URLSearchParams({
+                    action: 'editTransaction',
+                    sheetId: SHEET_ID,
+                    id: id,
+                    date: date,
+                    amount: amount
+                });
+                
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: params
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    const transactionIndex = transactionsData.findIndex(t => t.id == id);
+                    if (transactionIndex !== -1) {
+                        transactionsData[transactionIndex].date = date;
+                        transactionsData[transactionIndex].amount = parseFloat(amount);
+                    }
+                    
+                    hideLoading();
+                    $('#editTransactionModal').modal('hide');
+                    loadTransactions();
+                    updateDashboard();
+                    
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'แก้ไขสำเร็จ',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                } else {
+                    throw new Error(result.message);
+                }
+                
+            } catch (error) {
+                hideLoading();
+                console.error('Error editing transaction:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'เกิดข้อผิดพลาด',
+                    text: 'ไม่สามารถแก้ไขรายการได้'
+                });
+            }
+        }
+
+        async function deleteTransaction(transactionId) {
+            const result = await Swal.fire({
+                title: 'ยืนยันการลบ',
+                text: 'คุณต้องการลบรายการนี้หรือไม่?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'ลบ',
+                cancelButtonText: 'ยกเลิก'
+            });
+            
+            if (result.isConfirmed) {
+                try {
+                    showLoading();
+                    
+                    const params = new URLSearchParams({
+                        action: 'deleteTransaction',
+                        sheetId: SHEET_ID,
+                        id: transactionId
+                    });
+                    
+                    const response = await fetch(API_URL, {
+                        method: 'POST',
+                        body: params
+                    });
+                    
+                    const apiResult = await response.json();
+                    
+                    if (apiResult.success) {
+                        transactionsData = transactionsData.filter(t => t.id != transactionId);
+                        
+                        hideLoading();
+                        loadTransactions();
+                        updateDashboard();
+                        
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'ลบสำเร็จ',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                    } else {
+                        throw new Error(apiResult.message);
+                    }
+                    
+                } catch (error) {
+                    hideLoading();
+                    console.error('Error deleting transaction:', error);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'เกิดข้อผิดพลาด',
+                        text: 'ไม่สามารถลบรายการได้'
+                    });
+                }
+            }
+        }
+
+        function showExportModal() {
+            $('#exportModal').modal('show');
+        }
+
+        function generatePreview() {
+            const startDate = $('#exportStartDate').val();
+            const endDate = $('#exportEndDate').val();
+            
+            if (!startDate || !endDate) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'กรุณาเลือกวันที่',
+                    text: 'กรุณาเลือกวันที่เริ่มต้นและสิ้นสุด'
+                });
+                return;
+            }
+            
+            const exportData = generateExportData(startDate, endDate);
+            displayPreview(exportData, startDate, endDate);
+        }
+
+        function generateExportData(startDate, endDate) {
+            let students = getUserStudents();
+            
+            // Filter transactions by date range
+            const filteredTransactions = transactionsData.filter(t => {
+                const transactionDate = new Date(t.date);
+                return transactionDate >= new Date(startDate) && transactionDate <= new Date(endDate);
+            });
+            
+            // Generate date columns
+            const dates = [];
+            const currentDate = new Date(startDate);
+            const endDateObj = new Date(endDate);
+            
+            while (currentDate <= endDateObj) {
+                dates.push(new Date(currentDate));
+                currentDate.setDate(currentDate.getDate() + 1);
+            }
+            
+            // Process data for each student
+            const exportData = students.map(student => {
+                const studentData = {
+                    name: student.name,
+                    grade: student.grade,
+                    dailyAmounts: {},
+                    dailyTotal: 0,
+                    monthlyTotal: 0,
+                    grandTotal: 0
+                };
+                
+                // Initialize daily amounts
+                dates.forEach(date => {
+                    const dateStr = date.toISOString().split('T')[0];
+                    studentData.dailyAmounts[dateStr] = 0;
+                });
+                
+                // Calculate daily amounts
+                filteredTransactions
+                    .filter(t => t.studentId === student.id)
+                    .forEach(transaction => {
+                        const amount = parseFloat(transaction.amount) || 0;
+                        const multiplier = (transaction.type === 'deposit' || transaction.type === 'migrate') ? 1 : -1;
+                        studentData.dailyAmounts[transaction.date] += (amount * multiplier);
+                    });
+                
+                // Calculate totals
+                studentData.dailyTotal = Object.values(studentData.dailyAmounts).reduce((sum, amount) => sum + amount, 0);
+                studentData.monthlyTotal = studentData.dailyTotal; // Same as daily total for the selected period
+                studentData.grandTotal = calculateStudentBalance(student.id);
+                
+                return studentData;
+            });
+            
+            return { students: exportData, dates: dates };
+        }
+
+        function displayPreview(exportData, startDate, endDate) {
+            let html = `
+                <div style="text-align: center; margin-bottom: 20px; font-family: 'Sarabun', sans-serif;">
+                    <img src="https://lh3.googleusercontent.com/d/1vQtWxoqhL4BWuOmDehWMGTqoRh63AThV" style="width: 60px; height: 60px; margin-bottom: 10px;">
+                    <h4>โรงเรียนบ้านกิ่วพร้าว</h4>
+                    <p>รายงานการออมทรัพย์ ระหว่างวันที่ ${formatDate(startDate)} ถึง ${formatDate(endDate)}</p>
+                </div>
+                
+                <table class="table table-bordered" style="font-family: 'Sarabun', sans-serif; font-size: 14px;">
+                    <thead class="table-primary">
+                        <tr>
+                            <th rowspan="2">ลำดับ</th>
+                            <th rowspan="2">ชื่อ-นามสกุล</th>
+            `;
+            
+            // Date headers
+            exportData.dates.forEach(date => {
+                html += `<th>${formatDate(date.toISOString().split('T')[0])}</th>`;
+            });
+            
+            html += `
+                            <th rowspan="2">ยอดรวมรายวัน</th>
+                            <th rowspan="2">ยอดรวมเดือนนี้</th>
+                            <th rowspan="2">ยอดรวมทั้งหมด</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            // Student rows
+            exportData.students.forEach((student, index) => {
+                html += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${student.name}</td>
+                `;
+                
+                exportData.dates.forEach(date => {
+                    const dateStr = date.toISOString().split('T')[0];
+                    const amount = student.dailyAmounts[dateStr] || 0;
+                    html += `<td>${amount !== 0 ? formatCurrency(amount) : '-'}</td>`;
+                });
+                
+                html += `
+                        <td>${formatCurrency(student.dailyTotal)}</td>
+                        <td>${formatCurrency(student.monthlyTotal)}</td>
+                        <td>${formatCurrency(student.grandTotal)}</td>
+                    </tr>
+                `;
+            });
+            
+            // Total row
+            html += `
+                    <tr class="table-warning">
+                        <td colspan="2"><strong>รวมทั้งสิ้น</strong></td>
+            `;
+            
+            exportData.dates.forEach(date => {
+                const dateStr = date.toISOString().split('T')[0];
+                const dayTotal = exportData.students.reduce((sum, student) => sum + (student.dailyAmounts[dateStr] || 0), 0);
+                html += `<td><strong>${dayTotal !== 0 ? formatCurrency(dayTotal) : '-'}</strong></td>`;
+            });
+            
+            const totalDaily = exportData.students.reduce((sum, student) => sum + student.dailyTotal, 0);
+            const totalMonthly = exportData.students.reduce((sum, student) => sum + student.monthlyTotal, 0);
+            const totalGrand = exportData.students.reduce((sum, student) => sum + student.grandTotal, 0);
+            
+            html += `
+                        <td><strong>${formatCurrency(totalDaily)}</strong></td>
+                        <td><strong>${formatCurrency(totalMonthly)}</strong></td>
+                        <td><strong>${formatCurrency(totalGrand)}</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+            `;
+            
+            $('#exportPreview').html(html).show();
+        }
+
+        async function exportToImage() {
+            const preview = document.getElementById('exportPreview');
+            if (!preview.innerHTML) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'กรุณาสร้างตัวอย่างก่อน',
+                    text: 'กรุณากดปุ่ม "แสดงตัวอย่าง" ก่อนทำการ Export'
+                });
+                return;
+            }
+            
+            try {
+                showLoading();
+                
+                const canvas = await html2canvas(preview, {
+                    scale: 2,
+                    useCORS: true,
+                    allowTaint: true,
+                    backgroundColor: '#ffffff'
+                });
+                
+                const link = document.createElement('a');
+                link.download = `รายงานการออมทรัพย์_${new Date().toISOString().split('T')[0]}.png`;
+                link.href = canvas.toDataURL();
+                link.click();
+                
+                hideLoading();
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Export สำเร็จ',
+                    text: 'ไฟล์รูปภาพถูกดาวน์โหลดแล้ว',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+                
+            } catch (error) {
+                hideLoading();
+                console.error('Error exporting to image:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'เกิดข้อผิดพลาด',
+                    text: 'ไม่สามารถ Export รูปภาพได้'
+                });
+            }
+        }
+
+        function exportToExcel() {
+            const startDate = $('#exportStartDate').val();
+            const endDate = $('#exportEndDate').val();
+            
+            if (!startDate || !endDate) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'กรุณาเลือกวันที่',
+                    text: 'กรุณาเลือกวันที่เริ่มต้นและสิ้นสุด'
+                });
+                return;
+            }
+            
+            try {
+                showLoading();
+                
+                const exportData = generateExportData(startDate, endDate);
+                
+                // Create workbook
+                const wb = XLSX.utils.book_new();
+                
+                // Prepare data for Excel
+                const excelData = [];
+                
+                // Header row 1
+                const header1 = ['ลำดับ', 'ชื่อ-นามสกุล'];
+                exportData.dates.forEach(date => {
+                    header1.push(formatDate(date.toISOString().split('T')[0]));
+                });
+                header1.push('ยอดรวมรายวัน', 'ยอดรวมเดือนนี้', 'ยอดรวมทั้งหมด');
+                excelData.push(header1);
+                
+                // Data rows
+                exportData.students.forEach((student, index) => {
+                    const row = [index + 1, student.name];
+                    
+                    exportData.dates.forEach(date => {
+                        const dateStr = date.toISOString().split('T')[0];
+                        const amount = student.dailyAmounts[dateStr] || 0;
+                        row.push(amount !== 0 ? amount : '');
+                    });
+                    
+                    row.push(student.dailyTotal, student.monthlyTotal, student.grandTotal);
+                    excelData.push(row);
+                });
+                
+                // Total row
+                const totalRow = ['', 'รวมทั้งสิ้น'];
+                exportData.dates.forEach(date => {
+                    const dateStr = date.toISOString().split('T')[0];
+                    const dayTotal = exportData.students.reduce((sum, student) => sum + (student.dailyAmounts[dateStr] || 0), 0);
+                    totalRow.push(dayTotal !== 0 ? dayTotal : '');
+                });
+                
+                const totalDaily = exportData.students.reduce((sum, student) => sum + student.dailyTotal, 0);
+                const totalMonthly = exportData.students.reduce((sum, student) => sum + student.monthlyTotal, 0);
+                const totalGrand = exportData.students.reduce((sum, student) => sum + student.grandTotal, 0);
+                
+                totalRow.push(totalDaily, totalMonthly, totalGrand);
+                excelData.push(totalRow);
+                
+                // Create worksheet
+                const ws = XLSX.utils.aoa_to_sheet(excelData);
+                
+                // Add to workbook
+                XLSX.utils.book_append_sheet(wb, ws, 'รายงานการออมทรัพย์');
+                
+                // Save file
+                XLSX.writeFile(wb, `รายงานการออมทรัพย์_${new Date().toISOString().split('T')[0]}.xlsx`);
+                
+                hideLoading();
+                
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Export สำเร็จ',
+                    text: 'ไฟล์ Excel ถูกดาวน์โหลดแล้ว',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+                
+            } catch (error) {
+                hideLoading();
+                console.error('Error exporting to Excel:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'เกิดข้อผิดพลาด',
+                    text: 'ไม่สามารถ Export Excel ได้'
+                });
+            }
+        }
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9633eb5fb4f97994',t:'MTc1MzE5NzU5OS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
