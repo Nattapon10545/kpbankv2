@@ -1939,13 +1939,42 @@
         }
 
         function generateExportData(startDate, endDate, exportFormat = 'student') {
-            const start = new Date(startDate + 'T00:00:00');
-            const end = new Date(endDate + 'T23:59:59');
-            
-            // Filter transactions by date range
+            // Filter transactions by date range using string comparison
             let filteredTransactions = transactionsData.filter(t => {
-                const transactionDate = new Date(t.date + 'T00:00:00');
-                return transactionDate >= start && transactionDate <= end;
+                // Normalize transaction date to YYYY-MM-DD format
+                let transactionDateStr = t.date;
+                
+                // Handle different date formats
+                if (transactionDateStr.includes('/')) {
+                    // Handle DD/MM/YYYY format
+                    const parts = transactionDateStr.split('/');
+                    if (parts.length === 3) {
+                        const day = parts[0].padStart(2, '0');
+                        const month = parts[1].padStart(2, '0');
+                        const year = parts[2];
+                        transactionDateStr = `${year}-${month}-${day}`;
+                    }
+                } else if (transactionDateStr.includes('-')) {
+                    // Already in YYYY-MM-DD format, but ensure proper padding
+                    const parts = transactionDateStr.split('-');
+                    if (parts.length === 3) {
+                        const year = parts[0];
+                        const month = parts[1].padStart(2, '0');
+                        const day = parts[2].padStart(2, '0');
+                        transactionDateStr = `${year}-${month}-${day}`;
+                    }
+                } else {
+                    // Try to parse as date object
+                    const date = new Date(transactionDateStr);
+                    if (!isNaN(date.getTime())) {
+                        const year = date.getFullYear();
+                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                        const day = String(date.getDate()).padStart(2, '0');
+                        transactionDateStr = `${year}-${month}-${day}`;
+                    }
+                }
+                
+                return transactionDateStr >= startDate && transactionDateStr <= endDate;
             });
             
             // Filter by user role
@@ -1957,12 +1986,17 @@
                 });
             }
             
-            // Get unique dates in range
+            // Generate date strings for the selected range
             const dates = [];
-            const currentDate = new Date(startDate + 'T00:00:00');
-            const endDateObj = new Date(endDate + 'T00:00:00');
+            const startDateObj = new Date(startDate);
+            const endDateObj = new Date(endDate);
+            
+            const currentDate = new Date(startDateObj);
             while (currentDate <= endDateObj) {
-                dates.push(currentDate.toISOString().split('T')[0]);
+                const year = currentDate.getFullYear();
+                const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+                const day = String(currentDate.getDate()).padStart(2, '0');
+                dates.push(`${year}-${month}-${day}`);
                 currentDate.setDate(currentDate.getDate() + 1);
             }
             
@@ -1987,15 +2021,48 @@
                 filteredTransactions.forEach(transaction => {
                     const student = studentsData.find(s => s.name === transaction.studentName);
                     if (student && gradeData[student.grade]) {
-                        const dateStr = transaction.date;
+                        // Normalize transaction date to match our date format
+                        let transactionDateStr = transaction.date;
+                        
+                        // Handle different date formats
+                        if (transactionDateStr.includes('/')) {
+                            // Handle DD/MM/YYYY format
+                            const parts = transactionDateStr.split('/');
+                            if (parts.length === 3) {
+                                const day = parts[0].padStart(2, '0');
+                                const month = parts[1].padStart(2, '0');
+                                const year = parts[2];
+                                transactionDateStr = `${year}-${month}-${day}`;
+                            }
+                        } else if (transactionDateStr.includes('-')) {
+                            // Already in YYYY-MM-DD format, but ensure proper padding
+                            const parts = transactionDateStr.split('-');
+                            if (parts.length === 3) {
+                                const year = parts[0];
+                                const month = parts[1].padStart(2, '0');
+                                const day = parts[2].padStart(2, '0');
+                                transactionDateStr = `${year}-${month}-${day}`;
+                            }
+                        } else {
+                            // Try to parse as date object
+                            const date = new Date(transactionDateStr);
+                            if (!isNaN(date.getTime())) {
+                                const year = date.getFullYear();
+                                const month = String(date.getMonth() + 1).padStart(2, '0');
+                                const day = String(date.getDate()).padStart(2, '0');
+                                transactionDateStr = `${year}-${month}-${day}`;
+                            }
+                        }
+                        
                         let amount = parseFloat(transaction.amount);
                         
                         if (transaction.type === 'ถอน') {
                             amount = -amount;
                         }
                         
-                        if (gradeData[student.grade].dailyAmounts.hasOwnProperty(dateStr)) {
-                            gradeData[student.grade].dailyAmounts[dateStr] += amount;
+                        // Only add if the date exists in our date range
+                        if (gradeData[student.grade].dailyAmounts.hasOwnProperty(transactionDateStr)) {
+                            gradeData[student.grade].dailyAmounts[transactionDateStr] += amount;
                         }
                     }
                 });
@@ -2046,15 +2113,55 @@
                 // Fill in transaction data
                 filteredTransactions.forEach(transaction => {
                     if (studentData[transaction.studentName]) {
-                        const dateStr = transaction.date;
+                        // Normalize transaction date to match our date format
+                        let transactionDateStr = transaction.date;
+                        
+                        // Handle different date formats
+                        if (transactionDateStr.includes('/')) {
+                            // Handle DD/MM/YYYY format
+                            const parts = transactionDateStr.split('/');
+                            if (parts.length === 3) {
+                                const day = parts[0].padStart(2, '0');
+                                const month = parts[1].padStart(2, '0');
+                                const year = parts[2];
+                                transactionDateStr = `${year}-${month}-${day}`;
+                            }
+                        } else if (transactionDateStr.includes('-')) {
+                            // Already in YYYY-MM-DD format, but ensure proper padding
+                            const parts = transactionDateStr.split('-');
+                            if (parts.length === 3) {
+                                const year = parts[0];
+                                const month = parts[1].padStart(2, '0');
+                                const day = parts[2].padStart(2, '0');
+                                transactionDateStr = `${year}-${month}-${day}`;
+                            }
+                        } else {
+                            // Try to parse as date object
+                            const date = new Date(transactionDateStr);
+                            if (!isNaN(date.getTime())) {
+                                const year = date.getFullYear();
+                                const month = String(date.getMonth() + 1).padStart(2, '0');
+                                const day = String(date.getDate()).padStart(2, '0');
+                                transactionDateStr = `${year}-${month}-${day}`;
+                            }
+                        }
+                        
                         let amount = parseFloat(transaction.amount);
                         
                         if (transaction.type === 'ถอน') {
                             amount = -amount;
                         }
                         
-                        if (studentData[transaction.studentName].dailyAmounts.hasOwnProperty(dateStr)) {
-                            studentData[transaction.studentName].dailyAmounts[dateStr] += amount;
+                        // Debug log to check date matching
+                        console.log(`Transaction date: ${transaction.date} -> Normalized: ${transactionDateStr}`);
+                        console.log(`Available dates:`, Object.keys(studentData[transaction.studentName].dailyAmounts));
+                        
+                        // Only add if the date exists in our date range
+                        if (studentData[transaction.studentName].dailyAmounts.hasOwnProperty(transactionDateStr)) {
+                            studentData[transaction.studentName].dailyAmounts[transactionDateStr] += amount;
+                            console.log(`Added ${amount} to ${transaction.studentName} on ${transactionDateStr}`);
+                        } else {
+                            console.log(`Date ${transactionDateStr} not found in range for ${transaction.studentName}`);
                         }
                     }
                 });
@@ -2319,8 +2426,23 @@
             
             // Save file
             const formatText = exportFormat === 'grade' ? '_รายชั้น' : '';
-            const fileName = `รายงานการออมทรัพย์${formatText}_${startDate}_${endDate}.xlsx`;
-            XLSX.writeFile(wb, fileName);
+            const fileName = `รายงานการออมทรัพย์${formatText}_${startDate.replace(/-/g, '')}_${endDate.replace(/-/g, '')}.xlsx`;
+            
+            try {
+                XLSX.writeFile(wb, fileName);
+            } catch (error) {
+                // Fallback method for download
+                const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+                const blob = new Blob([wbout], { type: 'application/octet-stream' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = fileName;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            }
             
             Swal.fire({
                 icon: 'success',
@@ -2363,23 +2485,42 @@
             html2canvas(tempDiv, {
                 scale: 2,
                 useCORS: true,
-                backgroundColor: 'white'
+                backgroundColor: 'white',
+                allowTaint: true,
+                logging: false
             }).then(canvas => {
                 // Create download link
-                const link = document.createElement('a');
                 const formatText = exportFormat === 'grade' ? '_รายชั้น' : '';
-                link.download = `รายงานการออมทรัพย์${formatText}_${startDate}_${endDate}.png`;
-                link.href = canvas.toDataURL();
-                link.click();
+                const fileName = `รายงานการออมทรัพย์${formatText}_${startDate.replace(/-/g, '')}_${endDate.replace(/-/g, '')}.png`;
                 
-                // Remove temporary div
+                // Convert canvas to blob and download
+                canvas.toBlob(function(blob) {
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = fileName;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                    
+                    // Remove temporary div
+                    document.body.removeChild(tempDiv);
+                    
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Export สำเร็จ',
+                        text: 'ไฟล์รูปภาพถูกดาวน์โหลดแล้ว',
+                        timer: 2000
+                    });
+                }, 'image/png');
+            }).catch(error => {
+                console.error('Error generating image:', error);
                 document.body.removeChild(tempDiv);
-                
                 Swal.fire({
-                    icon: 'success',
-                    title: 'Export สำเร็จ',
-                    text: 'ไฟล์รูปภาพถูกดาวน์โหลดแล้ว',
-                    timer: 2000
+                    icon: 'error',
+                    title: 'เกิดข้อผิดพลาด',
+                    text: 'ไม่สามารถสร้างไฟล์รูปภาพได้'
                 });
             });
         }
@@ -2412,5 +2553,5 @@
             $('#loadingOverlay').hide();
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9648d3d846087328',t:'MTc1MzQxNjgzNy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96491a3d24737331',t:'MTc1MzQxOTcxOS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
