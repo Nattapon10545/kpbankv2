@@ -1920,44 +1920,56 @@
                 
                 // Set specific dimensions for A4 landscape (29.7cm width)
                 const canvas = await html2canvas(element, {
-                    scale: 3,
+                    scale: 2,
                     useCORS: true,
                     allowTaint: true,
                     width: 1123, // 29.7cm at 96 DPI
                     height: element.scrollHeight,
                     scrollX: 0,
-                    scrollY: 0
+                    scrollY: 0,
+                    backgroundColor: '#ffffff'
                 });
                 
-                // Convert canvas to blob and force download
-                canvas.toBlob(function(blob) {
-                    if (blob) {
-                        const url = URL.createObjectURL(blob);
-                        const link = document.createElement('a');
-                        link.href = url;
-                        link.download = `รายงานการออมเงิน_${startDate}_${endDate}.png`;
-                        link.style.display = 'none';
-                        document.body.appendChild(link);
-                        
-                        // Force click and cleanup
-                        setTimeout(() => {
-                            link.click();
-                            document.body.removeChild(link);
-                            URL.revokeObjectURL(url);
-                        }, 100);
-                    }
-                }, 'image/png', 1.0);
+                // Convert to data URL first
+                const dataURL = canvas.toDataURL('image/png', 1.0);
+                
+                // Create download function
+                function downloadImage() {
+                    const link = document.createElement('a');
+                    link.href = dataURL;
+                    link.download = `รายงานการออมเงิน_${startDate.replace(/-/g, '')}_${endDate.replace(/-/g, '')}.png`;
+                    
+                    // Add to DOM temporarily
+                    document.body.appendChild(link);
+                    
+                    // Trigger download
+                    link.click();
+                    
+                    // Clean up
+                    document.body.removeChild(link);
+                }
+                
+                // Try multiple download methods
+                try {
+                    downloadImage();
+                } catch (e) {
+                    // Fallback: open in new window
+                    const newWindow = window.open();
+                    newWindow.document.write(`<img src="${dataURL}" style="max-width:100%;">`);
+                    newWindow.document.title = `รายงานการออมเงิน_${startDate}_${endDate}`;
+                }
                 
                 Swal.fire({
                     icon: 'success',
                     title: 'Export สำเร็จ',
-                    text: 'ไฟล์รูปภาพถูกดาวน์โหลดแล้ว'
+                    text: 'ไฟล์รูปภาพถูกดาวน์โหลดแล้ว หากไม่พบไฟล์ กรุณาตรวจสอบโฟลเดอร์ Downloads'
                 });
             } catch (error) {
+                console.error('Export error:', error);
                 Swal.fire({
                     icon: 'error',
                     title: 'เกิดข้อผิดพลาด',
-                    text: error.message
+                    text: 'ไม่สามารถ Export รูปภาพได้ กรุณาลองใหม่อีกครั้ง'
                 });
             } finally {
                 $('body').LoadingOverlay('hide');
@@ -2028,37 +2040,63 @@
                 // Add to workbook
                 XLSX.utils.book_append_sheet(wb, ws, 'รายงานการออมเงิน');
                 
-                // Generate buffer and create blob with proper MIME type
-                const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-                const blob = new Blob([wbout], { 
-                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
-                });
+                // Create download function
+                function downloadExcel() {
+                    try {
+                        // Generate file with proper filename
+                        const filename = `รายงานการออมเงิน_${startDate.replace(/-/g, '')}_${endDate.replace(/-/g, '')}.xlsx`;
+                        
+                        // Use XLSX writeFile method for better compatibility
+                        XLSX.writeFile(wb, filename);
+                        
+                        return true;
+                    } catch (e) {
+                        console.error('XLSX writeFile error:', e);
+                        return false;
+                    }
+                }
                 
-                // Create download link with forced download
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = `รายงานการออมเงิน_${startDate}_${endDate}.xlsx`;
-                link.style.display = 'none';
-                document.body.appendChild(link);
+                // Try download
+                const downloadSuccess = downloadExcel();
                 
-                // Force download with timeout
-                setTimeout(() => {
-                    link.click();
-                    document.body.removeChild(link);
-                    URL.revokeObjectURL(url);
-                }, 100);
+                if (!downloadSuccess) {
+                    // Fallback method using blob
+                    try {
+                        const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+                        const blob = new Blob([wbout], { 
+                            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+                        });
+                        
+                        const url = URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = `รายงานการออมเงิน_${startDate.replace(/-/g, '')}_${endDate.replace(/-/g, '')}.xlsx`;
+                        
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        
+                        // Clean up after delay
+                        setTimeout(() => {
+                            URL.revokeObjectURL(url);
+                        }, 1000);
+                    } catch (blobError) {
+                        console.error('Blob download error:', blobError);
+                        throw new Error('ไม่สามารถดาวน์โหลดไฟล์ได้');
+                    }
+                }
                 
                 Swal.fire({
                     icon: 'success',
                     title: 'Export สำเร็จ',
-                    text: 'ไฟล์ Excel ถูกดาวน์โหลดแล้ว'
+                    text: 'ไฟล์ Excel ถูกดาวน์โหลดแล้ว หากไม่พบไฟล์ กรุณาตรวจสอบโฟลเดอร์ Downloads'
                 });
             } catch (error) {
+                console.error('Excel export error:', error);
                 Swal.fire({
                     icon: 'error',
                     title: 'เกิดข้อผิดพลาด',
-                    text: error.message
+                    text: 'ไม่สามารถ Export Excel ได้ กรุณาลองใหม่อีกครั้ง'
                 });
             } finally {
                 $('body').LoadingOverlay('hide');
@@ -2247,5 +2285,5 @@
             }
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9655c454170e7993',t:'MTc1MzU1MjUxNi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9655cf86229f2db8',t:'MTc1MzU1Mjk3NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
