@@ -249,7 +249,7 @@
                     </li>
                     <li class="nav-item" id="loginNav">
                         <a class="nav-link" href="#" onclick="showLoginModal()">
-                            <img src="https://img.icons8.com/fluency/20/login.png" class="me-1"> เข้าสู่ระบบ
+                            <img src="https://img.icons8.com/fluency/20/key.png" class="me-1"> เข้าสู่ระบบ
                         </a>
                     </li>
                     <li class="nav-item hidden" id="logoutNav">
@@ -503,7 +503,7 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">
-                        <img src="https://img.icons8.com/fluency/24/login.png" class="me-2">
+                        <img src="https://img.icons8.com/fluency/24/key.png" class="me-2">
                         เข้าสู่ระบบ
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -1060,10 +1060,10 @@
                         <td>${student.grade}</td>
                         <td>${balance.toLocaleString()} บาท</td>
                         <td>
-                            <button class="btn btn-sm btn-warning me-1" onclick="editStudentModal(${student.id})" ${!currentUser ? 'disabled' : ''}>
+                            <button class="btn btn-sm btn-warning me-1" onclick="editStudentModal('${student.id}')" ${!currentUser ? 'disabled' : ''}>
                                 <img src="https://img.icons8.com/fluency/16/edit.png"> แก้ไข
                             </button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteStudent(${student.id})" ${!currentUser ? 'disabled' : ''}>
+                            <button class="btn btn-sm btn-danger" onclick="deleteStudent('${student.id}')" ${!currentUser ? 'disabled' : ''}>
                                 <img src="https://img.icons8.com/fluency/16/delete.png"> ลบ
                             </button>
                         </td>
@@ -1364,10 +1364,10 @@
                         <td>${parseFloat(transaction.amount).toLocaleString()} บาท</td>
                         <td>${parseFloat(transaction.balance).toLocaleString()} บาท</td>
                         <td>
-                            <button class="btn btn-sm btn-warning me-1" onclick="editTransaction(${transaction.id})">
+                            <button class="btn btn-sm btn-warning me-1" onclick="editTransaction('${transaction.id}')">
                                 <img src="https://img.icons8.com/fluency/16/edit.png"> แก้ไข
                             </button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteTransaction(${transaction.id})">
+                            <button class="btn btn-sm btn-danger" onclick="deleteTransaction('${transaction.id}')">
                                 <img src="https://img.icons8.com/fluency/16/delete.png"> ลบ
                             </button>
                         </td>
@@ -1917,17 +1917,29 @@
                 $('body').LoadingOverlay('show');
                 
                 const element = document.getElementById('exportPreview');
+                
+                // Set specific dimensions for A4 landscape (29.7cm width)
                 const canvas = await html2canvas(element, {
-                    scale: 2,
+                    scale: 3,
                     useCORS: true,
-                    allowTaint: true
+                    allowTaint: true,
+                    width: 1123, // 29.7cm at 96 DPI
+                    height: element.scrollHeight,
+                    scrollX: 0,
+                    scrollY: 0
                 });
                 
-                // Create download link
-                const link = document.createElement('a');
-                link.download = `รายงานการออมเงิน_${startDate}_${endDate}.png`;
-                link.href = canvas.toDataURL();
-                link.click();
+                // Convert canvas to blob
+                canvas.toBlob(function(blob) {
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = `รายงานการออมเงิน_${startDate}_${endDate}.png`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                }, 'image/png');
                 
                 Swal.fire({
                     icon: 'success',
@@ -2009,8 +2021,19 @@
                 // Add to workbook
                 XLSX.utils.book_append_sheet(wb, ws, 'รายงานการออมเงิน');
                 
-                // Save file
-                XLSX.writeFile(wb, `รายงานการออมเงิน_${startDate}_${endDate}.xlsx`);
+                // Generate buffer and create blob
+                const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+                const blob = new Blob([wbout], { type: 'application/octet-stream' });
+                
+                // Create download link
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `รายงานการออมเงิน_${startDate}_${endDate}.xlsx`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
                 
                 Swal.fire({
                     icon: 'success',
@@ -2106,5 +2129,5 @@
             }
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96559a5ed02a799c',t:'MTc1MzU1MDc5Ni4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9655b236f52f2dbc',t:'MTc1MzU1MTc3My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
