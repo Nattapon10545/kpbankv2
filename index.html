@@ -1732,69 +1732,72 @@
             const exportData = generateExportData(startDate, endDate);
             
             let html = `
-                <div class="text-center mb-3">
-                    <img src="https://lh3.googleusercontent.com/d/1vQtWxoqhL4BWuOmDehWMGTqoRh63AThV" width="60" height="60">
-                    <h6>โรงเรียนบ้านกิ่วพร้าว</h6>
-                    <p>รายงานการออมเงิน ระหว่างวันที่ ${formatThaiDate(startDate)} ถึง ${formatThaiDate(endDate)}</p>
-                </div>
-                <table class="table table-bordered">
-                    <thead>
-                        <tr>
-                            <th>ลำดับ</th>
-                            <th>ชื่อ-นามสกุล</th>
+                <div style="width: 100%; max-width: 1200px; margin: 0 auto; padding: 20px; background: white;">
+                    <div style="text-align: center; margin-bottom: 30px;">
+                        <img src="https://lh3.googleusercontent.com/d/1vQtWxoqhL4BWuOmDehWMGTqoRh63AThV" width="80" height="80">
+                        <h4 style="margin: 10px 0; font-weight: bold; color: #333;">โรงเรียนบ้านกิ่วพร้าว</h4>
+                        <h5 style="margin: 5px 0; color: #666;">รายงานการออมเงิน</h5>
+                        <p style="margin: 5px 0; color: #666;">ระหว่างวันที่ ${formatThaiDate(startDate)} ถึง ${formatThaiDate(endDate)}</p>
+                    </div>
+                    <table style="width: 100%; border-collapse: collapse; margin: 0 auto; font-size: 14px; background: white;">
+                        <thead>
+                            <tr style="background-color: #f8f9fa;">
+                                <th style="border: 2px solid #000; padding: 12px; text-align: center; font-weight: bold;">ลำดับ</th>
+                                <th style="border: 2px solid #000; padding: 12px; text-align: center; font-weight: bold;">ชื่อ-นามสกุล</th>
             `;
             
             // Add date columns
             exportData.dates.forEach(date => {
-                html += `<th>${formatThaiDate(date)}</th>`;
+                html += `<th style="border: 2px solid #000; padding: 12px; text-align: center; font-weight: bold; min-width: 80px;">${formatThaiDate(date)}</th>`;
             });
             
             html += `
-                            <th>ยอดรวมตามช่วงวันที่</th>
-                            <th>ยอดรวมทั้งหมด</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+                                <th style="border: 2px solid #000; padding: 12px; text-align: center; font-weight: bold; background-color: #e3f2fd;">ยอดรวมตามช่วงวันที่</th>
+                                <th style="border: 2px solid #000; padding: 12px; text-align: center; font-weight: bold; background-color: #e8f5e8;">ยอดรวมทั้งหมด</th>
+                            </tr>
+                        </thead>
+                        <tbody>
             `;
             
             // Add data rows
             exportData.rows.forEach((row, index) => {
-                html += `<tr>
-                    <td>${index + 1}</td>
-                    <td>${row.name}</td>
+                const rowBg = index % 2 === 0 ? '#ffffff' : '#f8f9fa';
+                html += `<tr style="background-color: ${rowBg};">
+                    <td style="border: 1px solid #000; padding: 10px; text-align: center;">${index + 1}</td>
+                    <td style="border: 1px solid #000; padding: 10px; text-align: left; font-weight: 500;">${row.name}</td>
                 `;
                 
                 exportData.dates.forEach(date => {
                     const amount = row.amounts[date] || 0;
-                    html += `<td>${amount.toLocaleString()}</td>`;
+                    html += `<td style="border: 1px solid #000; padding: 10px; text-align: right;">${amount.toLocaleString()}</td>`;
                 });
                 
                 html += `
-                    <td>${row.periodTotal.toLocaleString()}</td>
-                    <td>${row.grandTotal.toLocaleString()}</td>
+                    <td style="border: 1px solid #000; padding: 10px; text-align: right; font-weight: bold; background-color: #e3f2fd;">${row.periodTotal.toLocaleString()}</td>
+                    <td style="border: 1px solid #000; padding: 10px; text-align: right; font-weight: bold; background-color: #e8f5e8;">${row.grandTotal.toLocaleString()}</td>
                 </tr>`;
             });
             
             // Add totals row
-            html += `<tr class="table-warning">
-                <td colspan="2"><strong>รวมทั้งสิ้น</strong></td>
+            html += `<tr style="background-color: #fff3cd; font-weight: bold;">
+                <td colspan="2" style="border: 2px solid #000; padding: 12px; text-align: center; font-weight: bold; font-size: 16px;">รวมทั้งสิ้น</td>
             `;
             
             exportData.dates.forEach(date => {
                 const total = exportData.rows.reduce((sum, row) => sum + (row.amounts[date] || 0), 0);
-                html += `<td><strong>${total.toLocaleString()}</strong></td>`;
+                html += `<td style="border: 2px solid #000; padding: 12px; text-align: right; font-weight: bold;">${total.toLocaleString()}</td>`;
             });
             
             const periodGrandTotal = exportData.rows.reduce((sum, row) => sum + row.periodTotal, 0);
             const overallGrandTotal = exportData.rows.reduce((sum, row) => sum + row.grandTotal, 0);
             
             html += `
-                <td><strong>${periodGrandTotal.toLocaleString()}</strong></td>
-                <td><strong>${overallGrandTotal.toLocaleString()}</strong></td>
+                <td style="border: 2px solid #000; padding: 12px; text-align: right; font-weight: bold; background-color: #e3f2fd; font-size: 16px;">${periodGrandTotal.toLocaleString()}</td>
+                <td style="border: 2px solid #000; padding: 12px; text-align: right; font-weight: bold; background-color: #e8f5e8; font-size: 16px;">${overallGrandTotal.toLocaleString()}</td>
             </tr>
             `;
             
-            html += `</tbody></table>`;
+            html += `</tbody></table></div>`;
             
             $('#exportPreview').html(html);
         }
@@ -1918,51 +1921,93 @@
                 
                 const element = document.getElementById('exportPreview');
                 
-                // Set specific dimensions for A4 landscape (29.7cm width)
+                // Get the actual content dimensions
+                const rect = element.getBoundingClientRect();
+                const contentWidth = Math.max(element.scrollWidth, rect.width);
+                const contentHeight = Math.max(element.scrollHeight, rect.height);
+                
+                // Create canvas with proper dimensions for A4 landscape
                 const canvas = await html2canvas(element, {
                     scale: 2,
                     useCORS: true,
                     allowTaint: true,
-                    width: 1123, // 29.7cm at 96 DPI
-                    height: element.scrollHeight,
+                    width: contentWidth,
+                    height: contentHeight,
                     scrollX: 0,
                     scrollY: 0,
-                    backgroundColor: '#ffffff'
+                    backgroundColor: '#ffffff',
+                    logging: false,
+                    removeContainer: true,
+                    imageTimeout: 0,
+                    onclone: function(clonedDoc) {
+                        // Ensure the cloned element maintains proper styling
+                        const clonedElement = clonedDoc.getElementById('exportPreview');
+                        if (clonedElement) {
+                            clonedElement.style.width = '100%';
+                            clonedElement.style.maxWidth = 'none';
+                            clonedElement.style.margin = '0';
+                            clonedElement.style.padding = '20px';
+                        }
+                    }
                 });
                 
-                // Convert to data URL first
+                // Convert to data URL with high quality
                 const dataURL = canvas.toDataURL('image/png', 1.0);
                 
-                // Create download function
+                // Create download function with improved error handling
                 function downloadImage() {
-                    const link = document.createElement('a');
-                    link.href = dataURL;
-                    link.download = `รายงานการออมเงิน_${startDate.replace(/-/g, '')}_${endDate.replace(/-/g, '')}.png`;
-                    
-                    // Add to DOM temporarily
-                    document.body.appendChild(link);
-                    
-                    // Trigger download
-                    link.click();
-                    
-                    // Clean up
-                    document.body.removeChild(link);
+                    try {
+                        const link = document.createElement('a');
+                        link.href = dataURL;
+                        link.download = `รายงานการออมเงิน_${startDate.replace(/-/g, '')}_${endDate.replace(/-/g, '')}.png`;
+                        
+                        // Add to DOM temporarily
+                        document.body.appendChild(link);
+                        
+                        // Trigger download
+                        link.click();
+                        
+                        // Clean up
+                        document.body.removeChild(link);
+                        
+                        return true;
+                    } catch (e) {
+                        console.error('Download error:', e);
+                        return false;
+                    }
                 }
                 
-                // Try multiple download methods
-                try {
-                    downloadImage();
-                } catch (e) {
+                // Try download, with fallback
+                const downloadSuccess = downloadImage();
+                
+                if (!downloadSuccess) {
                     // Fallback: open in new window
-                    const newWindow = window.open();
-                    newWindow.document.write(`<img src="${dataURL}" style="max-width:100%;">`);
-                    newWindow.document.title = `รายงานการออมเงิน_${startDate}_${endDate}`;
+                    const newWindow = window.open('', '_blank');
+                    newWindow.document.write(`
+                        <html>
+                            <head>
+                                <title>รายงานการออมเงิน ${formatThaiDate(startDate)} - ${formatThaiDate(endDate)}</title>
+                                <style>
+                                    body { margin: 0; padding: 20px; text-align: center; }
+                                    img { max-width: 100%; height: auto; border: 1px solid #ddd; }
+                                </style>
+                            </head>
+                            <body>
+                                <h3>รายงานการออมเงิน</h3>
+                                <p>คลิกขวาที่รูปภาพแล้วเลือก "Save image as..." เพื่อบันทึก</p>
+                                <img src="${dataURL}" alt="รายงานการออมเงิน">
+                            </body>
+                        </html>
+                    `);
+                    newWindow.document.close();
                 }
                 
                 Swal.fire({
                     icon: 'success',
                     title: 'Export สำเร็จ',
-                    text: 'ไฟล์รูปภาพถูกดาวน์โหลดแล้ว หากไม่พบไฟล์ กรุณาตรวจสอบโฟลเดอร์ Downloads'
+                    text: downloadSuccess ? 
+                        'ไฟล์รูปภาพถูกดาวน์โหลดแล้ว หากไม่พบไฟล์ กรุณาตรวจสอบโฟลเดอร์ Downloads' :
+                        'รูปภาพถูกเปิดในหน้าต่างใหม่ กรุณาคลิกขวาที่รูปเพื่อบันทึก'
                 });
             } catch (error) {
                 console.error('Export error:', error);
@@ -2285,5 +2330,5 @@
             }
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9655cf86229f2db8',t:'MTc1MzU1Mjk3NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9655dab6b1c9799a',t:'MTc1MzU1MzQzMy4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
