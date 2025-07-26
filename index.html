@@ -1929,17 +1929,24 @@
                     scrollY: 0
                 });
                 
-                // Convert canvas to blob
+                // Convert canvas to blob and force download
                 canvas.toBlob(function(blob) {
-                    const url = URL.createObjectURL(blob);
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = `รายงานการออมเงิน_${startDate}_${endDate}.png`;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                    URL.revokeObjectURL(url);
-                }, 'image/png');
+                    if (blob) {
+                        const url = URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = url;
+                        link.download = `รายงานการออมเงิน_${startDate}_${endDate}.png`;
+                        link.style.display = 'none';
+                        document.body.appendChild(link);
+                        
+                        // Force click and cleanup
+                        setTimeout(() => {
+                            link.click();
+                            document.body.removeChild(link);
+                            URL.revokeObjectURL(url);
+                        }, 100);
+                    }
+                }, 'image/png', 1.0);
                 
                 Swal.fire({
                     icon: 'success',
@@ -2021,19 +2028,26 @@
                 // Add to workbook
                 XLSX.utils.book_append_sheet(wb, ws, 'รายงานการออมเงิน');
                 
-                // Generate buffer and create blob
+                // Generate buffer and create blob with proper MIME type
                 const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-                const blob = new Blob([wbout], { type: 'application/octet-stream' });
+                const blob = new Blob([wbout], { 
+                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+                });
                 
-                // Create download link
+                // Create download link with forced download
                 const url = URL.createObjectURL(blob);
                 const link = document.createElement('a');
                 link.href = url;
                 link.download = `รายงานการออมเงิน_${startDate}_${endDate}.xlsx`;
+                link.style.display = 'none';
                 document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                URL.revokeObjectURL(url);
+                
+                // Force download with timeout
+                setTimeout(() => {
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                }, 100);
                 
                 Swal.fire({
                     icon: 'success',
@@ -2069,13 +2083,117 @@
         // Event listeners for export date changes
         $('#exportStartDate, #exportEndDate').on('change', updateExportPreview);
 
-        // Transaction edit/delete functions (placeholder)
+        // Transaction edit/delete functions
         function editTransaction(transactionId) {
+            const transaction = transactionsData.find(t => t.id == transactionId);
+            if (!transaction) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'ไม่พบข้อมูล',
+                    text: 'ไม่พบรายการที่ต้องการแก้ไข'
+                });
+                return;
+            }
+            
+            const student = studentsData.find(s => s.id == transaction.studentId);
+            if (!student) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'ไม่พบข้อมูลนักเรียน',
+                    text: 'ไม่พบข้อมูลนักเรียนสำหรับรายการนี้'
+                });
+                return;
+            }
+            
             Swal.fire({
-                icon: 'info',
-                title: 'ฟีเจอร์ยังไม่พร้อม',
-                text: 'การแก้ไขรายการจะพัฒนาในเวอร์ชันถัดไป'
+                title: 'แก้ไขรายการ',
+                html: `
+                    <div class="text-start">
+                        <div class="mb-3">
+                            <label class="form-label">นักเรียน:</label>
+                            <input type="text" class="form-control" value="${student.name} (${student.grade})" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">วันที่:</label>
+                            <input type="date" id="editDate" class="form-control" value="${transaction.date}">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">ประเภท:</label>
+                            <select id="editType" class="form-select">
+                                <option value="ฝาก" ${transaction.type === 'ฝาก' ? 'selected' : ''}>ฝาก</option>
+                                <option value="ถอน" ${transaction.type === 'ถอน' ? 'selected' : ''}>ถอน</option>
+                                <option value="ยกมา" ${transaction.type === 'ยกมา' ? 'selected' : ''}>ยกมา</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">จำนวนเงิน:</label>
+                            <input type="number" id="editAmount" class="form-control" value="${transaction.amount}" min="0" step="0.01">
+                        </div>
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonText: 'บันทึก',
+                cancelButtonText: 'ยกเลิก',
+                preConfirm: () => {
+                    const date = document.getElementById('editDate').value;
+                    const type = document.getElementById('editType').value;
+                    const amount = parseFloat(document.getElementById('editAmount').value);
+                    
+                    if (!date || !type || !amount || amount <= 0) {
+                        Swal.showValidationMessage('กรุณากรอกข้อมูลให้ครบถ้วน');
+                        return false;
+                    }
+                    
+                    return { date, type, amount };
+                }
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    await updateTransaction(transactionId, result.value);
+                }
             });
+        }
+        
+        async function updateTransaction(transactionId, updatedData) {
+            try {
+                $('body').LoadingOverlay('show');
+                
+                const params = new URLSearchParams();
+                params.append('action', 'updateTransaction');
+                params.append('sheetId', SHEET_ID);
+                params.append('transactionId', transactionId);
+                params.append('date', updatedData.date);
+                params.append('type', updatedData.type);
+                params.append('amount', updatedData.amount);
+                
+                const response = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    body: params
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'แก้ไขสำเร็จ',
+                        timer: 1500
+                    });
+                    
+                    await loadData();
+                    loadTransactions();
+                    updateDashboard();
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'เกิดข้อผิดพลาด',
+                    text: error.message
+                });
+            } finally {
+                $('body').LoadingOverlay('hide');
+            }
         }
 
         async function deleteTransaction(transactionId) {
@@ -2129,5 +2247,5 @@
             }
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9655b236f52f2dbc',t:'MTc1MzU1MTc3My4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9655c454170e7993',t:'MTc1MzU1MjUxNi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
