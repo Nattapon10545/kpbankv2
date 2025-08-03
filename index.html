@@ -1034,14 +1034,7 @@
             pagination.innerHTML = '';
 
             if (totalPages > 1) {
-                for (let i = 1; i <= totalPages; i++) {
-                    const pageItem = `
-                        <li class="page-item ${i === currentPage ? 'active' : ''}">
-                            <a class="page-link" href="#" onclick="changePage(${i})">${i}</a>
-                        </li>
-                    `;
-                    pagination.innerHTML += pageItem;
-                }
+                pagination.innerHTML = generatePaginationHTML(currentPage, totalPages, 'changePage');
             }
         }
 
@@ -1116,14 +1109,7 @@
             pagination.innerHTML = '';
 
             if (totalPages > 1) {
-                for (let i = 1; i <= totalPages; i++) {
-                    const pageItem = `
-                        <li class="page-item ${i === currentPage ? 'active' : ''}">
-                            <a class="page-link" href="#" onclick="changeStudentPage(${i})">${i}</a>
-                        </li>
-                    `;
-                    pagination.innerHTML += pageItem;
-                }
+                pagination.innerHTML = generatePaginationHTML(currentPage, totalPages, 'changeStudentPage');
             }
         }
 
@@ -1131,6 +1117,143 @@
         function changeStudentPage(page) {
             currentPage = page;
             updateStudentsTable();
+        }
+
+        // Generate pagination HTML with ellipsis and first/last buttons
+        function generatePaginationHTML(currentPage, totalPages, functionName) {
+            let html = '';
+            const maxVisiblePages = 5;
+            
+            // First page button
+            if (currentPage > 1) {
+                html += `
+                    <li class="page-item">
+                        <a class="page-link" href="#" onclick="${functionName}(1)" title="หน้าแรก">
+                            <i class="fas fa-angle-double-left"></i>
+                        </a>
+                    </li>
+                `;
+            }
+            
+            // Previous page button
+            if (currentPage > 1) {
+                html += `
+                    <li class="page-item">
+                        <a class="page-link" href="#" onclick="${functionName}(${currentPage - 1})" title="หน้าก่อนหน้า">
+                            <i class="fas fa-angle-left"></i>
+                        </a>
+                    </li>
+                `;
+            }
+            
+            // Calculate page range
+            let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+            let endPage = Math.min(totalPages, startPage + maxVisiblePages - 1);
+            
+            // Adjust start page if we're near the end
+            if (endPage - startPage < maxVisiblePages - 1) {
+                startPage = Math.max(1, endPage - maxVisiblePages + 1);
+            }
+            
+            // Show first page and ellipsis if needed
+            if (startPage > 1) {
+                html += `
+                    <li class="page-item">
+                        <a class="page-link" href="#" onclick="${functionName}(1)">1</a>
+                    </li>
+                `;
+                
+                if (startPage > 2) {
+                    html += `
+                        <li class="page-item">
+                            <span class="page-link" onclick="showMorePages(${Math.max(2, startPage - 5)}, ${startPage - 1}, '${functionName}')" 
+                                  style="cursor: pointer; background-color: #f8f9fa;" title="แสดงหน้าเพิ่มเติม">...</span>
+                        </li>
+                    `;
+                }
+            }
+            
+            // Show page numbers
+            for (let i = startPage; i <= endPage; i++) {
+                html += `
+                    <li class="page-item ${i === currentPage ? 'active' : ''}">
+                        <a class="page-link" href="#" onclick="${functionName}(${i})">${i}</a>
+                    </li>
+                `;
+            }
+            
+            // Show ellipsis and last page if needed
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    html += `
+                        <li class="page-item">
+                            <span class="page-link" onclick="showMorePages(${endPage + 1}, ${Math.min(totalPages - 1, endPage + 5)}, '${functionName}')" 
+                                  style="cursor: pointer; background-color: #f8f9fa;" title="แสดงหน้าเพิ่มเติม">...</span>
+                        </li>
+                    `;
+                }
+                
+                html += `
+                    <li class="page-item">
+                        <a class="page-link" href="#" onclick="${functionName}(${totalPages})">${totalPages}</a>
+                    </li>
+                `;
+            }
+            
+            // Next page button
+            if (currentPage < totalPages) {
+                html += `
+                    <li class="page-item">
+                        <a class="page-link" href="#" onclick="${functionName}(${currentPage + 1})" title="หน้าถัดไป">
+                            <i class="fas fa-angle-right"></i>
+                        </a>
+                    </li>
+                `;
+            }
+            
+            // Last page button
+            if (currentPage < totalPages) {
+                html += `
+                    <li class="page-item">
+                        <a class="page-link" href="#" onclick="${functionName}(${totalPages})" title="หน้าสุดท้าย">
+                            <i class="fas fa-angle-double-right"></i>
+                        </a>
+                    </li>
+                `;
+            }
+            
+            return html;
+        }
+
+        // Show more pages when clicking ellipsis
+        function showMorePages(startPage, endPage, functionName) {
+            Swal.fire({
+                title: 'เลือกหน้า',
+                html: generatePageSelector(startPage, endPage, functionName),
+                showConfirmButton: false,
+                showCancelButton: true,
+                cancelButtonText: 'ปิด',
+                width: '400px'
+            });
+        }
+
+        // Generate page selector for ellipsis popup
+        function generatePageSelector(startPage, endPage, functionName) {
+            let html = '<div class="row g-2">';
+            
+            for (let i = startPage; i <= endPage; i++) {
+                html += `
+                    <div class="col-3">
+                        <button class="btn btn-outline-primary btn-sm w-100" 
+                                onclick="Swal.close(); ${functionName}(${i});">
+                            ${i}
+                        </button>
+                    </div>
+                `;
+            }
+            
+            html += '</div>';
+            return html;
         }
 
         // Show carry over modal
@@ -2312,5 +2435,5 @@
             document.getElementById('exportEndDate').value = today.toISOString().split('T')[0];
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96900db2b44b7dc3',t:'MTc1NDE2MzY5NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9693c55fb0367996',t:'MTc1NDIwMjY3NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
