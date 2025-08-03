@@ -878,17 +878,48 @@
                 savingsChart.destroy();
             }
 
+            const filterType = document.getElementById('filterType').value;
+            const filterMonth = document.getElementById('filterMonth').value;
             const grades = ['อนุบาล', 'ป.1', 'ป.2', 'ป.3', 'ป.4', 'ป.5', 'ป.6'];
-            const gradeAmounts = grades.map(grade => {
-                return students.filter(s => s.grade === grade).reduce((sum, s) => sum + s.balance, 0);
-            });
+            
+            let gradeAmounts;
+            let chartLabel;
+            
+            if (filterType === 'monthly' && filterMonth) {
+                // Calculate deposit amounts for the selected month
+                gradeAmounts = grades.map(grade => {
+                    const gradeStudents = students.filter(s => s.grade === grade);
+                    return gradeStudents.reduce((gradeSum, student) => {
+                        const monthlyDeposits = transactions.filter(t => 
+                            t.studentName === student.name && 
+                            t.date.startsWith(filterMonth) &&
+                            (t.type === 'ฝาก' || t.type === 'ยกมา')
+                        );
+                        return gradeSum + monthlyDeposits.reduce((sum, t) => sum + t.amount, 0);
+                    }, 0);
+                });
+                
+                // Format month for display
+                const monthDate = new Date(filterMonth + '-01');
+                const monthNames = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+                                  'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+                const monthName = monthNames[monthDate.getMonth()];
+                const year = monthDate.getFullYear() + 543;
+                chartLabel = `ยอดเงินฝากเดือน${monthName} ${year} (บาท)`;
+            } else {
+                // Show total balance for all time
+                gradeAmounts = grades.map(grade => {
+                    return students.filter(s => s.grade === grade).reduce((sum, s) => sum + s.balance, 0);
+                });
+                chartLabel = 'ยอดเงินฝากทั้งหมด (บาท)';
+            }
 
             savingsChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: grades,
                     datasets: [{
-                        label: 'ยอดเงินฝาก (บาท)',
+                        label: chartLabel,
                         data: gradeAmounts,
                         backgroundColor: 'rgba(233, 92, 0, 0.8)',
                         borderColor: 'rgba(233, 92, 0, 1)',
@@ -909,7 +940,15 @@
                     },
                     plugins: {
                         legend: {
-                            display: false
+                            display: true,
+                            position: 'top'
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.dataset.label + ': ฿' + context.parsed.y.toLocaleString();
+                                }
+                            }
                         }
                     }
                 }
@@ -2435,5 +2474,5 @@
             document.getElementById('exportEndDate').value = today.toISOString().split('T')[0];
         });
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9693c55fb0367996',t:'MTc1NDIwMjY3NS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9693d4df43117996',t:'MTc1NDIwMzMxMC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
